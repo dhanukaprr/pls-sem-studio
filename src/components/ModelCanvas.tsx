@@ -161,6 +161,7 @@ export default function ModelCanvas({
 
   const handleDropOnConstruct = (e: React.DragEvent, constructId: string) => {
     e.preventDefault();
+    e.stopPropagation();
     const dragData = e.dataTransfer.getData('text/plain');
     if (!dragData) return;
 
@@ -190,6 +191,47 @@ export default function ModelCanvas({
         }
       })
     );
+  };
+
+  const handleCanvasDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    if (!svgRef.current) return;
+
+    const dragData = e.dataTransfer.getData('text/plain');
+    if (!dragData) return;
+
+    const columnNames = dragData.split(',').map(s => s.trim()).filter(Boolean);
+    if (columnNames.length === 0) return;
+
+    const rect = svgRef.current.getBoundingClientRect();
+    const x = Math.round(e.clientX - rect.left);
+    const y = Math.round(e.clientY - rect.top);
+
+    const newId = 'construct_' + Date.now();
+    const numConstructs = constructs.length + 1;
+    const newConstruct: Construct = {
+      id: newId,
+      name: `Latent Variable ${numConstructs}`,
+      type: 'reflective',
+      x,
+      y,
+      indicators: columnNames,
+      indicatorAlignment: 'left'
+    };
+
+    onUpdateConstructs([
+      ...constructs.map(c => ({
+        ...c,
+        indicators: c.indicators.filter(ind => !columnNames.includes(ind))
+      })),
+      newConstruct
+    ]);
+
+    onSelectConstruct(newId);
+    setNodeName(newConstruct.name);
+    setNodeType('reflective');
+    setNodeAlign('left');
+    setIsEditingNode(true);
   };
 
   // Unassign indicator
@@ -542,6 +584,7 @@ export default function ModelCanvas({
           onMouseUp={handleMouseUp}
           onMouseLeave={handleMouseUp}
           onDragOver={handleDragOver}
+          onDrop={handleCanvasDrop}
         >
           {/* Arrow markers definitions */}
           <defs>
