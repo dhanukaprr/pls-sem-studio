@@ -117,7 +117,6 @@ export default function ModelCanvas({
           onUpdatePaths([...paths, newPath]);
         }
         setPathStartId(null);
-        setActiveTool('select');
       }
     } else if (activeTool === 'delete') {
       // Delete construct and all associated paths

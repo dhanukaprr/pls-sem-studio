@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { Dataset, Construct } from '../types';
 import { parseCSV } from '../utils/csvParser';
 import { builtInDatasets } from '../utils/demoData';
@@ -22,7 +22,13 @@ export default function DatasetPanel({
   const [expandedVar, setExpandedVar] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [selectedIndicators, setSelectedIndicators] = useState<string[]>([]);
+  const [lastSelectedCol, setLastSelectedCol] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    setSelectedIndicators([]);
+    setLastSelectedCol(null);
+  }, [selectedDataset]);
 
   const assignedVariables = new Set(constructs.flatMap(c => c.indicators));
 
@@ -80,10 +86,39 @@ export default function DatasetPanel({
     return { mean, std, min, max };
   };
 
-  const handleToggleSelectIndicator = (col: string) => {
-    setSelectedIndicators(prev =>
-      prev.includes(col) ? prev.filter(c => c !== col) : [...prev, col]
-    );
+  const handleToggleSelectIndicator = (col: string, e?: React.MouseEvent<HTMLInputElement>) => {
+    const isShiftPressed = e ? e.shiftKey : false;
+
+    if (isShiftPressed && lastSelectedCol && lastSelectedCol !== col) {
+      const allCols = selectedDataset.columns;
+      const startIdx = allCols.indexOf(lastSelectedCol);
+      const endIdx = allCols.indexOf(col);
+
+      if (startIdx !== -1 && endIdx !== -1) {
+        const minIdx = Math.min(startIdx, endIdx);
+        const maxIdx = Math.max(startIdx, endIdx);
+        const rangeCols = allCols.slice(minIdx, maxIdx + 1);
+
+        setSelectedIndicators(prev => {
+          const next = new Set(prev);
+          rangeCols.forEach(c => next.add(c));
+          return Array.from(next);
+        });
+        setLastSelectedCol(col);
+        return;
+      }
+    }
+
+    setSelectedIndicators(prev => {
+      const alreadySelected = prev.includes(col);
+      if (alreadySelected) {
+        setLastSelectedCol(null);
+        return prev.filter(c => c !== col);
+      } else {
+        setLastSelectedCol(col);
+        return [...prev, col];
+      }
+    });
   };
 
   const handleSelectAllIndicators = () => {
@@ -300,7 +335,8 @@ export default function DatasetPanel({
                     <input
                       type="checkbox"
                       checked={isSelected}
-                      onChange={() => handleToggleSelectIndicator(col)}
+                      onClick={(e) => handleToggleSelectIndicator(col, e)}
+                      onChange={() => {}}
                       className="w-3.5 h-3.5 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
                     />
                     <BarChart className="w-3.5 h-3.5 text-gray-400 group-hover:text-indigo-500 transition" />
