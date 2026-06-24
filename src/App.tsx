@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Dataset, Construct, StructuralPath, PLSResults } from './types';
+import { Dataset, Construct, StructuralPath, PLSResults, PLSAlgorithmOptions, BootstrappingOptions } from './types';
 import { builtInDatasets, defaultCorpRepModel, defaultTamModel } from './utils/demoData';
 import { runPlsSem } from './utils/plsAlgorithm';
 import { runBootstrapping } from './utils/bootstrapping';
 import DatasetPanel from './components/DatasetPanel';
 import ModelCanvas from './components/ModelCanvas';
 import ResultsDashboard from './components/ResultsDashboard';
+import AnalysisSettingsModal from './components/AnalysisSettingsModal';
 import { Sigma, Info, BookOpen, AlertCircle, Sparkles, ChevronDown, RefreshCw, Layers, Save, Upload } from 'lucide-react';
 
 export default function App() {
@@ -19,10 +20,30 @@ export default function App() {
   const [viewMode, setViewMode] = useState<'split' | 'canvas-only' | 'results-only'>('split');
   const [validationError, setValidationError] = useState<string | null>(null);
 
+  const [algoSettings, setAlgoSettings] = useState<PLSAlgorithmOptions>({
+    weightingScheme: 'path',
+    maxIterations: 300,
+    tolerance: 1e-7
+  });
+
+  const [bootSettings, setBootSettings] = useState<BootstrappingOptions>({
+    samplesCount: 500,
+    significanceLevel: 0.05,
+    testType: 'two-tailed'
+  });
+
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [settingsModalType, setSettingsModalType] = useState<'pls' | 'bootstrap'>('pls');
+
   // Auto-run the PLS-SEM algorithm on load if there are constructs
   useEffect(() => {
     if (constructs.length > 0) {
-      handleRunPlsSem();
+      try {
+        const res = runPlsSem(selectedDataset, constructs, paths, algoSettings);
+        setResults(res);
+      } catch (e) {
+        // quiet fail on initial auto-load
+      }
     }
   }, []);
 
@@ -78,42 +99,54 @@ export default function App() {
 
   const handleRunPlsSem = () => {
     if (!validateModel()) return;
-
-    try {
-      const res = runPlsSem(selectedDataset, constructs, paths);
-      setResults(res);
-      
-      // If we are currently in canvas-only, expand to split to see the results
-      if (viewMode === 'canvas-only') {
-        setViewMode('split');
-      }
-    } catch (err: any) {
-      setValidationError(`Algorithm execution error: ${err.message || err}`);
-    }
+    setSettingsModalType('pls');
+    setIsSettingsOpen(true);
   };
 
-  const handleRunBootstrapping = async () => {
+  const handleRunBootstrapping = () => {
     if (!validateModel()) return;
+    setSettingsModalType('bootstrap');
+    setIsSettingsOpen(true);
+  };
 
-    try {
-      setBootstrappingProgress(0);
-      setValidationError(null);
-      
-      const enrichedResults = await runBootstrapping(
-        selectedDataset,
-        constructs,
-        paths,
-        250, // 250 samples is extremely accurate for browser execution and finishes in ~1.5 seconds!
-        (prog) => {
-          setBootstrappingProgress(prog.percent);
+  const handleExecuteRun = async (algo: PLSAlgorithmOptions, boot: BootstrappingOptions) => {
+    setAlgoSettings(algo);
+    setBootSettings(boot);
+
+    if (settingsModalType === 'pls') {
+      try {
+        const res = runPlsSem(selectedDataset, constructs, paths, algo);
+        setResults(res);
+        
+        // If we are currently in canvas-only, expand to split to see the results
+        if (viewMode === 'canvas-only') {
+          setViewMode('split');
         }
-      );
+      } catch (err: any) {
+        setValidationError(`Algorithm execution error: ${err.message || err}`);
+      }
+    } else {
+      try {
+        setBootstrappingProgress(0);
+        setValidationError(null);
+        
+        const enrichedResults = await runBootstrapping(
+          selectedDataset,
+          constructs,
+          paths,
+          algo,
+          boot,
+          (prog) => {
+            setBootstrappingProgress(prog.percent);
+          }
+        );
 
-      setResults(enrichedResults);
-      setBootstrappingProgress(null);
-    } catch (err: any) {
-      setBootstrappingProgress(null);
-      setValidationError(`Bootstrapping execution error: ${err.message || err}`);
+        setResults(enrichedResults);
+        setBootstrappingProgress(null);
+      } catch (err: any) {
+        setBootstrappingProgress(null);
+        setValidationError(`Bootstrapping execution error: ${err.message || err}`);
+      }
     }
   };
 
@@ -374,6 +407,14 @@ export default function App() {
 
       </main>
       
+      <AnalysisSettingsModal
+        isOpen={isSettingsOpen}
+        onClose={() => setIsSettingsOpen(false)}
+        type={settingsModalType}
+        algoSettings={algoSettings}
+        bootSettings={bootSettings}
+        onRun={handleExecuteRun}
+      />
     </div>
   );
 }

@@ -1,4 +1,4 @@
-import { Dataset, Construct, StructuralPath, PLSResults } from '../types';
+import { Dataset, Construct, StructuralPath, PLSResults, BootstrappingOptions, PLSAlgorithmOptions } from '../types';
 import { runPlsSem } from './plsAlgorithm';
 import { getMean, getStdDev } from './math';
 
@@ -22,6 +22,14 @@ export function getTwoTailedPValue(t: number): number {
   if (isNaN(t) || !isFinite(t)) return 1.0;
   // Two-tailed p-value
   const p = 2 * (1 - normalCDF(Math.abs(t)));
+  return Math.max(0, Math.min(1.0, p));
+}
+
+// Compute P-value for one-tailed test from a T-statistic
+export function getOneTailedPValue(t: number): number {
+  if (isNaN(t) || !isFinite(t)) return 1.0;
+  // One-tailed p-value
+  const p = 1 - normalCDF(Math.abs(t));
   return Math.max(0, Math.min(1.0, p));
 }
 
@@ -53,11 +61,26 @@ export async function runBootstrapping(
   dataset: Dataset,
   constructs: Construct[],
   paths: StructuralPath[],
-  samplesCount = 200,
+  algoOptions?: PLSAlgorithmOptions,
+  bootOptions?: BootstrappingOptions,
   onProgress?: (progress: BootstrapProgress) => void
 ): Promise<PLSResults> {
+  const bootOpt: BootstrappingOptions = bootOptions || {
+    samplesCount: 200,
+    significanceLevel: 0.05,
+    testType: 'two-tailed'
+  };
+
+  const algoOpt: PLSAlgorithmOptions = algoOptions || {
+    weightingScheme: 'path',
+    maxIterations: 300,
+    tolerance: 1e-7
+  };
+
+  const samplesCount = bootOpt.samplesCount;
+
   // 1. Calculate original results
-  const originalResults = runPlsSem(dataset, constructs, paths);
+  const originalResults = runPlsSem(dataset, constructs, paths, algoOpt);
   
   const N_paths = originalResults.pathCoefficients.length;
   const N_inds = originalResults.indicatorResults.length;
@@ -91,7 +114,7 @@ export async function runBootstrapping(
         const end = Math.min(samplesCount, currentSample + chunkSize);
         for (let b = currentSample; b < end; b++) {
           const bootDataset = drawBootstrapSample(dataset);
-          const bootRes = runPlsSem(bootDataset, constructs, paths);
+          const bootRes = runPlsSem(bootDataset, constructs, paths, algoOpt);
 
           // Collect path coefficients
           bootRes.pathCoefficients.forEach(p => {
@@ -149,12 +172,16 @@ export async function runBootstrapping(
     
     // Calculate T-statistic
     const tValue = standardError === 0 ? 0 : Math.abs(originalVal / standardError);
-    const pValue = getTwoTailedPValue(tValue);
+    const pValue = bootOpt.testType === 'one-tailed' ? getOneTailedPValue(tValue) : getTwoTailedPValue(tValue);
 
-    // Calculate Percentile Confidence Intervals (2.5% and 97.5%)
+    // Calculate Percentile Confidence Intervals
     const sorted = [...validEstimates].sort((a, b) => a - b);
-    const idxLower = Math.floor(sorted.length * 0.025);
-    const idxUpper = Math.floor(sorted.length * 0.975);
+    const alpha = bootOpt.significanceLevel;
+    const lowerPercent = bootOpt.testType === 'one-tailed' ? alpha : alpha / 2;
+    const upperPercent = bootOpt.testType === 'one-tailed' ? (1 - alpha) : (1 - alpha / 2);
+
+    const idxLower = Math.max(0, Math.min(sorted.length - 1, Math.floor(sorted.length * lowerPercent)));
+    const idxUpper = Math.max(0, Math.min(sorted.length - 1, Math.floor(sorted.length * upperPercent)));
     const ciLower = sorted[idxLower] ?? originalVal;
     const ciUpper = sorted[idxUpper] ?? originalVal;
 
@@ -204,6 +231,8 @@ export async function runBootstrapping(
     pathCoefficients: enrichedPathCoefficients,
     indicatorResults: enrichedIndicatorResults,
     bootstrappingRun: true,
-    bootstrapSamplesCount: samplesCount
+    bootstrapSamplesCount: samplesCount,
+    algorithmOptions: algoOpt,
+    bootstrappingOptions: bootOpt
   };
 }

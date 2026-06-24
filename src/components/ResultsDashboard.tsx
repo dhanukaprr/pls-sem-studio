@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { PLSResults, Construct, Dataset } from '../types';
-import { ArrowRight, CheckCircle, AlertTriangle, XCircle, BarChart3, ShieldCheck, Layers, Award, Info, RefreshCw, FileSpreadsheet } from 'lucide-react';
+import { ArrowRight, CheckCircle, AlertTriangle, XCircle, BarChart3, ShieldCheck, Layers, Award, Info, RefreshCw, FileSpreadsheet, Shuffle } from 'lucide-react';
 import * as XLSX from 'xlsx';
 
 interface ResultsDashboardProps {
@@ -373,6 +373,46 @@ export default function ResultsDashboard({
           >
             <FileSpreadsheet className="w-3.5 h-3.5" /> Export XLSX Report
           </button>
+        </div>
+      </div>
+
+      {/* Parameter Settings Banner */}
+      <div id="results-parameter-banner" className="bg-slate-50 border-b border-gray-200 px-5 py-2 flex flex-wrap items-center justify-between gap-2 text-[11px] text-slate-500">
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+          <span className="flex items-center gap-1">
+            <span className="font-bold text-slate-600">Scheme:</span> 
+            <span className="capitalize font-mono text-slate-800">{results.algorithmOptions?.weightingScheme ?? 'path'}</span>
+          </span>
+          <span className="w-px h-3 bg-slate-200"></span>
+          <span className="flex items-center gap-1">
+            <span className="font-bold text-slate-600">Max Iterations:</span> 
+            <span className="font-mono text-slate-800">{results.algorithmOptions?.maxIterations ?? 300}</span>
+          </span>
+          <span className="w-px h-3 bg-slate-200"></span>
+          <span className="flex items-center gap-1">
+            <span className="font-bold text-slate-600">Stop Criterion:</span> 
+            <span className="font-mono text-slate-800">{(results.algorithmOptions?.tolerance ?? 1e-7).toExponential(1)}</span>
+          </span>
+          {results.bootstrappingRun && (
+            <>
+              <span className="w-px h-3 bg-slate-200"></span>
+              <span className="flex items-center gap-1 text-indigo-700 font-semibold bg-indigo-50/70 px-1.5 py-0.5 rounded border border-indigo-100">
+                <Shuffle className="w-3 h-3 text-indigo-500 shrink-0" />
+                <span>Bootstrap Subsamp: {results.bootstrapSamplesCount ?? results.bootstrappingOptions?.samplesCount ?? 500}</span>
+              </span>
+              <span className="w-px h-3 bg-indigo-100"></span>
+              <span className="flex items-center gap-1 text-indigo-700 font-semibold bg-indigo-50/70 px-1.5 py-0.5 rounded border border-indigo-100">
+                <span>Sig. Level: {results.bootstrappingOptions?.significanceLevel ?? 0.05}</span>
+              </span>
+              <span className="w-px h-3 bg-indigo-100"></span>
+              <span className="flex items-center gap-1 text-indigo-700 font-semibold bg-indigo-50/70 px-1.5 py-0.5 rounded border border-indigo-100 font-mono">
+                <span className="capitalize">{results.bootstrappingOptions?.testType ?? 'two-tailed'}</span>
+              </span>
+            </>
+          )}
+        </div>
+        <div className="text-[10px] text-slate-400 font-medium">
+          Calculated based on custom parameters
         </div>
       </div>
 

@@ -35,6 +35,18 @@ export interface NormalityResult {
 }
 
 // Results of PLS-SEM Algorithm
+export interface PLSAlgorithmOptions {
+  weightingScheme: 'path' | 'factor' | 'centroid';
+  maxIterations: number;
+  tolerance: number;
+}
+
+export interface BootstrappingOptions {
+  samplesCount: number;
+  significanceLevel: number; // e.g. 0.05
+  testType: 'two-tailed' | 'one-tailed';
+}
+
 export interface PathCoefficientResult {
   from: string;
   to: string;
@@ -97,6 +109,9 @@ export interface PLSResults {
   iterationsRun: number;
   converged: boolean;
   srmr: number;
+  // Options used to generate these results
+  algorithmOptions?: PLSAlgorithmOptions;
+  bootstrappingOptions?: BootstrappingOptions;
   // Bootstrapping options if run
   bootstrappingRun?: boolean;
   bootstrapSamplesCount?: number;

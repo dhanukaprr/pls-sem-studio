@@ -1,4 +1,4 @@
-import { Dataset, Construct, StructuralPath, PLSResults, PathCoefficientResult, IndicatorResult, ConstructValidity, DiscriminantValidityRow, CollinearityVif, NormalityResult } from '../types';
+import { Dataset, Construct, StructuralPath, PLSResults, PathCoefficientResult, IndicatorResult, ConstructValidity, DiscriminantValidityRow, CollinearityVif, NormalityResult, PLSAlgorithmOptions } from '../types';
 import { getMean, getStdDev, standardize, correlation, runMultipleRegression, calculateVif, calculateHtmtRatio, transpose, multiplyMatrices } from './math';
 
 export function calculateNormality(values: number[]): {
@@ -63,10 +63,17 @@ export function calculateNormality(values: number[]): {
 export function runPlsSem(
   dataset: Dataset,
   constructs: Construct[],
-  paths: StructuralPath[]
+  paths: StructuralPath[],
+  options?: PLSAlgorithmOptions
 ): PLSResults {
   const N = dataset.rows.length;
   const numConstructs = constructs.length;
+
+  const opt: PLSAlgorithmOptions = options || {
+    weightingScheme: 'path',
+    maxIterations: 300,
+    tolerance: 1e-7
+  };
 
   if (N === 0 || numConstructs === 0) {
     return {
@@ -82,7 +89,8 @@ export function runPlsSem(
       vif: [],
       iterationsRun: 0,
       converged: false,
-      srmr: 0
+      srmr: 0,
+      algorithmOptions: opt
     };
   }
 
@@ -141,8 +149,8 @@ export function runPlsSem(
   // 3. Iterative PLS Algorithm
   let converged = false;
   let iterationsRun = 0;
-  const maxIterations = 300;
-  const tolerance = 1e-7;
+  const maxIterations = opt.maxIterations;
+  const tolerance = opt.tolerance;
 
   // Track outer weights: constructId -> indicator -> weight
   let weights: Record<string, Record<string, number>> = {};
@@ -171,8 +179,27 @@ export function runPlsSem(
 
       const innerScoreVec = Array(N).fill(0);
       for (const adjId of adjIds) {
-        // Factor scheme: weight is correlation
-        const r = correlation(Y[c.id], Y[adjId]);
+        let r = 0;
+        if (opt.weightingScheme === 'factor') {
+          r = correlation(Y[c.id], Y[adjId]);
+        } else if (opt.weightingScheme === 'centroid') {
+          r = Math.sign(correlation(Y[c.id], Y[adjId])) || 1;
+        } else { // 'path'
+          // If adjId is a predecessor of c, use regression coefficient. If successor or other, use correlation.
+          const isPred = predecessors[c.id].includes(adjId);
+          if (isPred) {
+            const preds = predecessors[c.id];
+            const X_mat = Y[preds[0]].map((_, rowIdx) =>
+              preds.map(pId => Y[pId][rowIdx])
+            );
+            const regression = runMultipleRegression(Y[c.id], X_mat);
+            const idx = preds.indexOf(adjId);
+            r = regression.coefficients[idx] ?? 0;
+          } else {
+            r = correlation(Y[c.id], Y[adjId]);
+          }
+        }
+
         const adjScore = Y[adjId];
         for (let i = 0; i < N; i++) {
           innerScoreVec[i] += r * adjScore[i];
@@ -535,6 +562,7 @@ export function runPlsSem(
     vif,
     iterationsRun,
     converged,
-    srmr
+    srmr,
+    algorithmOptions: opt
   };
 }
