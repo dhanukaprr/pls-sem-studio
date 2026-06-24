@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Construct, StructuralPath, PLSResults, ConstructType, IndicatorAlignment } from '../types';
-import { Play, RotateCcw, Trash2, Link2, Plus, Move, Edit, Check, Settings, X } from 'lucide-react';
+import { Play, RotateCcw, Trash2, Link2, Plus, Move, Edit, Check, Settings, X, Download, ChevronDown } from 'lucide-react';
 
 interface ModelCanvasProps {
   constructs: Construct[];
@@ -36,6 +36,7 @@ export default function ModelCanvas({
   const [draggedNodeId, setDraggedNodeId] = useState<string | null>(null);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const [isEditingNode, setIsEditingNode] = useState(false);
+  const [isExportDropdownOpen, setIsExportDropdownOpen] = useState(false);
 
   // Form states for creating/editing constructs
   const [nodeName, setNodeName] = useState('');
@@ -225,6 +226,144 @@ export default function ModelCanvas({
     setIsEditingNode(false);
   };
 
+  const handleExportSvg = () => {
+    const svgEl = document.getElementById('pls-model-svg');
+    if (!svgEl) return;
+
+    // Clone the SVG element so we can safely strip dynamic/interactive classes
+    const clonedSvg = svgEl.cloneNode(true) as SVGSVGElement;
+    
+    // Set explicit size attributes if needed, or viewBox
+    const bbox = svgRef.current?.getBoundingClientRect();
+    const width = bbox?.width || 800;
+    const height = bbox?.height || 600;
+    
+    clonedSvg.setAttribute('width', width.toString());
+    clonedSvg.setAttribute('height', height.toString());
+    clonedSvg.setAttribute('viewBox', `0 0 ${width} ${height}`);
+    
+    // Add inline background color
+    clonedSvg.style.backgroundColor = '#ffffff';
+
+    // Remove unwanted interactive classes and UI controls (like the red indicator remover crosses)
+    const elementsToRemove = clonedSvg.querySelectorAll('.cursor-pointer circle[fill="#ef4444"], .cursor-pointer line');
+    elementsToRemove.forEach(el => el.remove());
+
+    // Inject styles for standalone rendering (since Tailwind classes won't be available out of context)
+    const styleEl = document.createElementNS('http://www.w3.org/2000/svg', 'style');
+    styleEl.textContent = `
+      text { font-family: "Inter", system-ui, sans-serif; }
+      .text-[10px] { font-size: 10px; }
+      .text-[9px] { font-size: 9px; }
+      .text-[8px] { font-size: 8px; }
+      .text-[7px] { font-size: 7px; }
+      .font-bold { font-weight: 700; }
+      .font-semibold { font-weight: 600; }
+      .font-mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
+      .fill-gray-900 { fill: #111827; }
+      .fill-slate-500 { fill: #64748b; }
+      .fill-indigo-600 { fill: #4f46e5; }
+      .fill-white { fill: #ffffff; }
+    `;
+    clonedSvg.insertBefore(styleEl, clonedSvg.firstChild);
+
+    // Serialize
+    const serializer = new XMLSerializer();
+    let svgString = serializer.serializeToString(clonedSvg);
+    
+    if (!svgString.startsWith('<?xml')) {
+      svgString = '<?xml version="1.0" standalone="no"?>\r\n' + svgString;
+    }
+
+    const blob = new Blob([svgString], { type: 'image/svg+xml;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `PLS_SEM_Model_Diagram.svg`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    setIsExportDropdownOpen(false);
+  };
+
+  const handleExportPng = () => {
+    const svgEl = document.getElementById('pls-model-svg');
+    if (!svgEl) return;
+
+    const bbox = svgRef.current?.getBoundingClientRect();
+    const width = bbox?.width || 800;
+    const height = bbox?.height || 600;
+
+    const clonedSvg = svgEl.cloneNode(true) as SVGSVGElement;
+    clonedSvg.setAttribute('width', width.toString());
+    clonedSvg.setAttribute('height', height.toString());
+    clonedSvg.setAttribute('viewBox', `0 0 ${width} ${height}`);
+    clonedSvg.style.backgroundColor = '#ffffff';
+
+    // Remove unwanted interactive classes and UI controls (like the red indicator remover crosses)
+    const elementsToRemove = clonedSvg.querySelectorAll('.cursor-pointer circle[fill="#ef4444"], .cursor-pointer line');
+    elementsToRemove.forEach(el => el.remove());
+
+    // Inject styles for standalone rendering (since Tailwind classes won't be available out of context)
+    const styleEl = document.createElementNS('http://www.w3.org/2000/svg', 'style');
+    styleEl.textContent = `
+      text { font-family: "Inter", system-ui, sans-serif; }
+      .text-[10px] { font-size: 10px; }
+      .text-[9px] { font-size: 9px; }
+      .text-[8px] { font-size: 8px; }
+      .text-[7px] { font-size: 7px; }
+      .font-bold { font-weight: 700; }
+      .font-semibold { font-weight: 600; }
+      .font-mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
+      .fill-gray-900 { fill: #111827; }
+      .fill-slate-500 { fill: #64748b; }
+      .fill-indigo-600 { fill: #4f46e5; }
+      .fill-white { fill: #ffffff; }
+    `;
+    clonedSvg.insertBefore(styleEl, clonedSvg.firstChild);
+
+    const serializer = new XMLSerializer();
+    const svgString = serializer.serializeToString(clonedSvg);
+
+    const svgBlob = new Blob([svgString], { type: 'image/svg+xml;charset=utf-8' });
+    const url = URL.createObjectURL(svgBlob);
+
+    const image = new Image();
+    image.onload = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = width * 2; // 2x scale for crisp image
+      canvas.height = height * 2;
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        ctx.scale(2, 2);
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, width, height);
+        ctx.drawImage(image, 0, 0, width, height);
+        
+        try {
+          const pngUrl = canvas.toDataURL('image/png');
+          const link = document.createElement('a');
+          link.href = pngUrl;
+          link.download = `PLS_SEM_Model_Diagram.png`;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+        } catch (err) {
+          console.error("Canvas export failed:", err);
+          handleExportSvg(); // Fallback
+        }
+      }
+      URL.revokeObjectURL(url);
+    };
+    image.onerror = () => {
+      URL.revokeObjectURL(url);
+      handleExportSvg(); // Fallback
+    };
+    image.src = url;
+    setIsExportDropdownOpen(false);
+  };
+
   const selectedNode = constructs.find(c => c.id === selectedConstructId);
 
   // Ensure fields match when selected node changes
@@ -235,6 +374,16 @@ export default function ModelCanvas({
       setNodeAlign(selectedNode.indicatorAlignment);
     }
   }, [selectedConstructId]);
+
+  // Close export dropdown when clicking outside
+  useEffect(() => {
+    if (!isExportDropdownOpen) return;
+    const handleOutsideClick = () => {
+      setIsExportDropdownOpen(false);
+    };
+    window.addEventListener('click', handleOutsideClick);
+    return () => window.removeEventListener('click', handleOutsideClick);
+  }, [isExportDropdownOpen]);
 
   return (
     <div className="flex flex-col h-full bg-white border border-gray-200 rounded-xl overflow-hidden relative shadow-sm">
@@ -315,6 +464,38 @@ export default function ModelCanvas({
           >
             <RotateCcw className="w-3.5 h-3.5" /> Bootstrap Signif.
           </button>
+
+          {/* Export Diagram Dropdown */}
+          <div className="relative">
+            <button
+              id="export-diagram-btn"
+              onClick={(e) => { e.stopPropagation(); setIsExportDropdownOpen(!isExportDropdownOpen); }}
+              disabled={constructs.length === 0}
+              className="flex items-center gap-1 px-3 py-1.5 border border-gray-200 bg-white text-gray-700 hover:bg-gray-50 disabled:opacity-50 rounded-lg text-xs font-medium shadow-sm transition cursor-pointer"
+            >
+              <Download className="w-3.5 h-3.5" /> Export <ChevronDown className="w-3 h-3 text-gray-400" />
+            </button>
+            {isExportDropdownOpen && (
+              <div className="absolute right-0 mt-1 w-44 bg-white border border-gray-200 rounded-lg shadow-lg py-1.5 z-30">
+                <button
+                  id="export-diagram-png-btn"
+                  onClick={handleExportPng}
+                  className="w-full text-left px-4 py-2 text-xs text-gray-700 hover:bg-gray-50 flex items-center gap-2 transition"
+                >
+                  <span className="w-1.5 h-1.5 rounded-full bg-indigo-500"></span>
+                  Download PNG Image
+                </button>
+                <button
+                  id="export-diagram-svg-btn"
+                  onClick={handleExportSvg}
+                  className="w-full text-left px-4 py-2 text-xs text-gray-700 hover:bg-gray-50 flex items-center gap-2 transition"
+                >
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                  Download SVG Vector
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 

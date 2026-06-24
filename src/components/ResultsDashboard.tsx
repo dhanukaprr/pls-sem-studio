@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { PLSResults, Construct } from '../types';
-import { ArrowRight, CheckCircle, AlertTriangle, XCircle, BarChart3, ShieldCheck, Layers, Award, Info, RefreshCw } from 'lucide-react';
+import { ArrowRight, CheckCircle, AlertTriangle, XCircle, BarChart3, ShieldCheck, Layers, Award, Info, RefreshCw, FileSpreadsheet } from 'lucide-react';
+import * as XLSX from 'xlsx';
 
 interface ResultsDashboardProps {
   results: PLSResults;
@@ -80,6 +81,124 @@ export default function ResultsDashboard({
   };
 
   const { totalEffects, indirectEffects } = computeAllEffects();
+
+  const handleExportExcel = () => {
+    // 1. Sheet 1: Path Coefficients
+    const pathRows = results.pathCoefficients.map(p => {
+      const fromName = constructsMap.get(p.from)?.name ?? p.from;
+      const toName = constructsMap.get(p.to)?.name ?? p.to;
+      return {
+        'Source Construct': fromName,
+        'Target Construct': toName,
+        'Original Estimate (Beta)': p.coefficient,
+        'Standard Error (SE)': p.standardError !== undefined ? p.standardError : 'N/A',
+        'T-Statistic': p.tValue !== undefined ? p.tValue : 'N/A',
+        'P-Value': p.pValue !== undefined ? p.pValue : 'N/A',
+        '95% CI Lower': p.ciLower !== undefined ? p.ciLower : 'N/A',
+        '95% CI Upper': p.ciUpper !== undefined ? p.ciUpper : 'N/A',
+        'Significance Status': p.pValue !== undefined ? (p.pValue < 0.05 ? 'Significant' : 'Not Significant') : 'N/A'
+      };
+    });
+
+    // 2. Sheet 2: Total & Indirect Effects
+    const effectRows: any[] = [];
+    const nodeIds = constructs.map(c => c.id);
+    nodeIds.forEach(src => {
+      nodeIds.forEach(dst => {
+        const total = totalEffects[src]?.[dst] ?? 0;
+        const direct = results.pathCoefficients.find(p => p.from === src && p.to === dst)?.coefficient ?? 0;
+        const indirect = indirectEffects[src]?.[dst] ?? 0;
+        if (total !== 0) {
+          const fromName = constructsMap.get(src)?.name ?? src;
+          const toName = constructsMap.get(dst)?.name ?? dst;
+          effectRows.push({
+            'Source Construct': fromName,
+            'Target Construct': toName,
+            'Direct Effect': direct,
+            'Indirect Effect': indirect,
+            'Total Effect': total,
+            'Mediation Type': indirect !== 0 && direct !== 0 ? 'Partially Mediated' : indirect !== 0 ? 'Fully Mediated' : 'Direct Only'
+          });
+        }
+      });
+    });
+
+    // 3. Sheet 3: Construct Validity
+    const validityRows = results.constructValidity.map(v => {
+      const cNode = constructsMap.get(v.id);
+      const isFormative = cNode?.type === 'formative';
+      return {
+        'Construct Name': v.name,
+        'Model Type': isFormative ? 'Formative (Mode B)' : 'Reflective (Mode A)',
+        'Cronbach\'s Alpha (Alpha)': isFormative ? 'Formative' : (v.cronbachAlpha !== null ? v.cronbachAlpha : 'N/A'),
+        'Dijkstra-Henseler (rho_A)': isFormative ? 'Formative' : (v.rhoA !== null ? v.rhoA : 'N/A'),
+        'Composite Reliability (rho_C)': isFormative ? 'Formative' : (v.compositeReliability !== null ? v.compositeReliability : 'N/A'),
+        'Average Variance Extracted (AVE)': isFormative ? 'Formative' : (v.ave !== null ? v.ave : 'N/A'),
+        'Convergent Validity Status': isFormative ? 'N/A' : (v.ave !== null && v.ave >= 0.5 ? 'OK (>= 0.5)' : 'Violated (< 0.5)')
+      };
+    });
+
+    // 4. Sheet 4: Indicator Loadings & Weights
+    const indicatorRows = results.indicatorResults.map(r => {
+      const cNode = constructsMap.get(r.constructId);
+      const isFormative = cNode?.type === 'formative';
+      return {
+        'Construct': cNode?.name ?? r.constructId,
+        'Indicator Column': r.indicator,
+        'Indicator Type': isFormative ? 'Formative (Weight)' : 'Reflective (Loading)',
+        'Estimate Value': isFormative ? r.weight : r.loading,
+        'Standard Error (SE)': r.standardError !== undefined ? r.standardError : 'N/A',
+        'T-Statistic': r.tValue !== undefined ? r.tValue : 'N/A',
+        'P-Value': r.pValue !== undefined ? r.pValue : 'N/A',
+        '95% CI Lower': r.ciLower !== undefined ? r.ciLower : 'N/A',
+        '95% CI Upper': r.ciUpper !== undefined ? r.ciUpper : 'N/A'
+      };
+    });
+
+    // 5. Sheet 5: Discriminant Validity (HTMT)
+    const htmtRows: any[] = [];
+    constructs.forEach(c1 => {
+      const rowVal: any = { 'Construct Name': c1.name };
+      constructs.forEach(c2 => {
+        if (c1.id === c2.id) {
+          rowVal[c2.name] = '-';
+        } else {
+          const htmtVal = results.htmt[c1.id]?.[c2.id] || results.htmt[c2.id]?.[c1.id];
+          rowVal[c2.name] = htmtVal !== undefined ? htmtVal.toFixed(3) : 'N/A';
+        }
+      });
+      htmtRows.push(rowVal);
+    });
+
+    // 6. Sheet 6: Collinearity VIF
+    const vifRows = results.vif.map(v => ({
+      'Analysis Type': v.type === 'inner' ? 'Inner (Construct Level)' : 'Outer (Indicator Level)',
+      'Target Latent Node / Endogenous': v.targetName,
+      'Predictor Column / Construct': v.predictor,
+      'Variance Inflation Factor (VIF)': v.vif,
+      'Collinearity Hazard': v.vif > 5 ? 'High Critical (>5)' : v.vif > 3.3 ? 'Warning (>3.3)' : 'OK (<3.3)'
+    }));
+
+    // 7. Sheet 7: Model Fit
+    const fitRows = [
+      { 'Metric Name': 'Standardized Root Mean Res. (SRMR)', 'Value': results.srmr, 'Threshold': '< 0.08 is recommended' },
+      { 'Metric Name': 'Converged Successfully', 'Value': results.converged ? 'Yes' : 'No', 'Threshold': '-' },
+      { 'Metric Name': 'Total Iterations Run', 'Value': results.iterationsRun, 'Threshold': '< 300' }
+    ];
+
+    // Create workbook using XLSX library
+    const wb = XLSX.utils.book_new();
+    
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(pathRows), "Path Coefficients");
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(effectRows), "Effects");
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(validityRows), "Construct Validity");
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(indicatorRows), "Indicator Metrics");
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(htmtRows), "Discriminant (HTMT)");
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(vifRows), "Collinearity VIF");
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(fitRows), "Model Fit");
+
+    XLSX.writeFile(wb, "PLS_SEM_Analysis_Detailed_Report.xlsx");
+  };
 
   // Helper to format p-values cleanly
   const formatPValue = (p?: number) => {
@@ -187,10 +306,17 @@ export default function ResultsDashboard({
           </button>
         </div>
 
-        <div className="py-2 shrink-0">
+        <div className="py-2 shrink-0 flex items-center gap-2">
           <span className="text-[10px] bg-gray-150 text-gray-700 px-2.5 py-1 rounded font-bold font-mono border border-gray-200">
             Converged in {results.iterationsRun} iterations
           </span>
+          <button
+            id="export-results-xlsx-btn"
+            onClick={handleExportExcel}
+            className="flex items-center gap-1.5 px-3 py-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded font-bold text-[10px] shadow-sm transition cursor-pointer"
+          >
+            <FileSpreadsheet className="w-3.5 h-3.5" /> Export XLSX Report
+          </button>
         </div>
       </div>
 

@@ -6,7 +6,7 @@ import { runBootstrapping } from './utils/bootstrapping';
 import DatasetPanel from './components/DatasetPanel';
 import ModelCanvas from './components/ModelCanvas';
 import ResultsDashboard from './components/ResultsDashboard';
-import { Sigma, Info, BookOpen, AlertCircle, Sparkles, ChevronDown, RefreshCw, Layers } from 'lucide-react';
+import { Sigma, Info, BookOpen, AlertCircle, Sparkles, ChevronDown, RefreshCw, Layers, Save, Upload } from 'lucide-react';
 
 export default function App() {
   // 1. Core State
@@ -123,6 +123,60 @@ export default function App() {
     setValidationError(null);
   };
 
+  const handleSaveProject = () => {
+    const projectData = {
+      version: '1.1',
+      dataset: selectedDataset,
+      constructs: constructs,
+      paths: paths,
+      results: results
+    };
+    const jsonStr = JSON.stringify(projectData, null, 2);
+    const blob = new Blob([jsonStr], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+    link.download = `PLS_SEM_Project_${timestamp}.pls`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
+  const handleLoadProject = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const fileContent = event.target?.result as string;
+        const data = JSON.parse(fileContent);
+
+        if (!data.dataset || !Array.isArray(data.constructs) || !Array.isArray(data.paths)) {
+          throw new Error('Incompatible project file format. The file is missing core path parameters.');
+        }
+
+        setSelectedDataset(data.dataset);
+        setConstructs(data.constructs);
+        setPaths(data.paths);
+        if (data.results) {
+          setResults(data.results);
+        } else {
+          setResults(null);
+        }
+        setSelectedConstructId(null);
+        setValidationError(null);
+      } catch (err: any) {
+        setValidationError(`Failed to load project: ${err.message || err}`);
+      }
+    };
+    reader.readAsText(file);
+    e.target.value = '';
+  };
+
   return (
     <div className="flex flex-col h-screen w-screen bg-[#f3f4f6] text-gray-950 overflow-hidden font-sans">
       
@@ -151,7 +205,35 @@ export default function App() {
         )}
 
         {/* Global Control Buttons */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
+          {/* Load Project hidden input & label button */}
+          <input
+            id="load-project-input"
+            type="file"
+            accept=".pls"
+            onChange={handleLoadProject}
+            className="hidden"
+          />
+          <label
+            htmlFor="load-project-input"
+            className="px-3 py-1.5 text-xs font-bold border border-gray-200 hover:bg-gray-50 text-gray-600 hover:text-gray-900 bg-white rounded-lg transition flex items-center gap-1.5 cursor-pointer shadow-sm"
+          >
+            <Upload className="w-3.5 h-3.5 text-gray-500" />
+            Load Project (.pls)
+          </label>
+
+          {/* Save Project button */}
+          <button
+            id="save-project-btn"
+            onClick={handleSaveProject}
+            className="px-3 py-1.5 text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white border border-indigo-600 rounded-lg transition flex items-center gap-1.5 cursor-pointer shadow-sm"
+          >
+            <Save className="w-3.5 h-3.5" />
+            Save Project (.pls)
+          </button>
+
+          <span className="w-px h-5 bg-gray-200 mx-1"></span>
+
           <button
             id="clear-all-btn"
             onClick={handleClearModel}
