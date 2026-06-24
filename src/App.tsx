@@ -11,14 +11,7 @@ import { Sigma, Info, BookOpen, AlertCircle, Sparkles, ChevronDown, RefreshCw, L
 
 export default function App() {
   // 1. Core State
-  const [theme, setTheme] = useState<'light' | 'dark'>(() => {
-    const saved = localStorage.getItem('pls-sem-theme');
-    return (saved as 'light' | 'dark') || 'light';
-  });
-
-  useEffect(() => {
-    localStorage.setItem('pls-sem-theme', theme);
-  }, [theme]);
+  const theme = 'light';
 
   const [showSplash, setShowSplash] = useState(true);
   const [selectedDataset, setSelectedDataset] = useState<Dataset>(builtInDatasets.corpRep);
@@ -257,16 +250,16 @@ export default function App() {
 
   if (showSplash) {
     return (
-      <div id="pls-splash-screen" className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950 p-4 md:p-8 overflow-y-auto">
+      <div id="pls-splash-screen" className="fixed inset-0 z-50 flex items-center justify-center bg-slate-50 p-4 md:p-8 overflow-y-auto">
         {/* Subtle decorative background glow grids */}
-        <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-30">
-          <div className="absolute top-1/4 left-1/4 w-[400px] h-[400px] bg-indigo-500/10 rounded-full blur-3xl animate-pulse"></div>
-          <div className="absolute bottom-1/4 right-1/4 w-[400px] h-[400px] bg-violet-500/10 rounded-full blur-3xl animate-pulse"></div>
+        <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-20">
+          <div className="absolute top-1/4 left-1/4 w-[400px] h-[400px] bg-indigo-400/10 rounded-full blur-3xl animate-pulse"></div>
+          <div className="absolute bottom-1/4 right-1/4 w-[400px] h-[400px] bg-violet-400/10 rounded-full blur-3xl animate-pulse"></div>
         </div>
 
-        <div className="w-full max-w-5xl bg-slate-900 rounded-3xl shadow-2xl border border-slate-800/80 overflow-hidden grid grid-cols-1 md:grid-cols-12 min-h-[600px] relative z-10">
+        <div className="w-full max-w-5xl bg-white rounded-3xl shadow-2xl border border-gray-200 overflow-hidden grid grid-cols-1 md:grid-cols-12 min-h-[600px] relative z-10">
           {/* Left Panel: App brand and info */}
-          <div className="md:col-span-5 bg-gradient-to-br from-indigo-950 via-slate-900 to-indigo-900 p-8 sm:p-10 flex flex-col justify-between border-r border-slate-800/50">
+          <div className="md:col-span-5 bg-gradient-to-br from-indigo-50/60 via-indigo-50/20 to-slate-100/50 p-8 sm:p-10 flex flex-col justify-between border-r border-gray-200">
             <div className="space-y-8">
               {/* Brand Header */}
               <div className="flex items-center gap-3">
@@ -274,10 +267,10 @@ export default function App() {
                   <Sigma className="w-6 h-6 stroke-[2.5]" />
                 </div>
                 <div>
-                  <h1 className="text-lg font-extrabold tracking-tight text-white flex items-center gap-2 leading-none">
-                    PLS-SEM Studio <span className="text-[10px] bg-indigo-500/20 text-indigo-300 font-bold px-2 py-0.5 rounded border border-indigo-500/30">v1.1</span>
+                  <h1 className="text-lg font-extrabold tracking-tight text-slate-900 flex items-center gap-2 leading-none">
+                    PLS-SEM Studio <span className="text-[10px] bg-indigo-100 text-indigo-755 font-bold px-2 py-0.5 rounded border border-indigo-200">v1.1</span>
                   </h1>
-                  <p className="text-[10px] text-indigo-200/60 font-semibold mt-1">
+                  <p className="text-[10px] text-indigo-600/80 font-bold mt-1">
                     Advanced Variance-Based SEM
                   </p>
                 </div>
@@ -285,10 +278,10 @@ export default function App() {
 
               {/* Title Description */}
               <div className="space-y-3">
-                <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white leading-tight">
+                <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-indigo-950 leading-tight">
                   Structural Equation Modeling Made Beautiful.
                 </h2>
-                <p className="text-xs text-slate-300 leading-relaxed font-medium animate-fade-in">
+                <p className="text-xs text-slate-650 leading-relaxed font-medium">
                   An immersive, high-performance workspace designed to build structural models, map indicator variables, and analyze latent constructs seamlessly inside your browser.
                 </p>
               </div>
@@ -296,52 +289,52 @@ export default function App() {
               {/* Key Features list */}
               <div className="space-y-3.5 pt-2">
                 <div className="flex items-start gap-3">
-                  <div className="bg-indigo-500/10 text-indigo-400 p-1 rounded-lg mt-0.5">
+                  <div className="bg-indigo-100 text-indigo-600 p-1 rounded-lg mt-0.5">
                     <Check className="w-3.5 h-3.5 stroke-[2.5]" />
                   </div>
                   <div>
-                    <h4 className="text-xs font-bold text-slate-100">Visual Path Modeling</h4>
-                    <p className="text-[11px] text-slate-400 mt-0.5">Drag-and-drop model builder with auto-refreshing path configurations.</p>
+                    <h4 className="text-xs font-bold text-slate-800">Visual Path Modeling</h4>
+                    <p className="text-[11px] text-slate-500 mt-0.5">Drag-and-drop model builder with auto-refreshing path configurations.</p>
                   </div>
                 </div>
 
                 <div className="flex items-start gap-3">
-                  <div className="bg-indigo-500/10 text-indigo-400 p-1 rounded-lg mt-0.5">
+                  <div className="bg-indigo-100 text-indigo-600 p-1 rounded-lg mt-0.5">
                     <Check className="w-3.5 h-3.5 stroke-[2.5]" />
                   </div>
                   <div>
-                    <h4 className="text-xs font-bold text-slate-100">Bootstrapping Significance Engine</h4>
-                    <p className="text-[11px] text-slate-400 mt-0.5">High-speed non-parametric resampling to evaluate direct hypothesis p-values.</p>
+                    <h4 className="text-xs font-bold text-slate-800">Bootstrapping Significance Engine</h4>
+                    <p className="text-[11px] text-slate-500 mt-0.5">High-speed non-parametric resampling to evaluate direct hypothesis p-values.</p>
                   </div>
                 </div>
 
                 <div className="flex items-start gap-3">
-                  <div className="bg-indigo-500/10 text-indigo-400 p-1 rounded-lg mt-0.5">
+                  <div className="bg-indigo-100 text-indigo-600 p-1 rounded-lg mt-0.5">
                     <Check className="w-3.5 h-3.5 stroke-[2.5]" />
                   </div>
                   <div>
-                    <h4 className="text-xs font-bold text-slate-100">Comprehensive Quality Reports</h4>
-                    <p className="text-[11px] text-slate-400 mt-0.5">View outer loadings, weights, HTMT, VIF collinearity, and SRMR fit indicators.</p>
+                    <h4 className="text-xs font-bold text-slate-800">Comprehensive Quality Reports</h4>
+                    <p className="text-[11px] text-slate-500 mt-0.5">View outer loadings, weights, HTMT, VIF collinearity, and SRMR fit indicators.</p>
                   </div>
                 </div>
               </div>
             </div>
 
             {/* Footer */}
-            <div className="pt-6 border-t border-slate-800/50 mt-8">
+            <div className="pt-6 border-t border-gray-200 mt-8">
               <p className="text-[11px] font-semibold text-slate-500 tracking-wider uppercase">
-                Developed by <span className="text-slate-300 font-bold">Dhanuka Perera</span>
+                Developed by <span className="text-slate-700 font-bold">Dhanuka Perera</span>
               </p>
             </div>
           </div>
 
           {/* Right Panel: Active Action Selection */}
-          <div className="md:col-span-7 p-8 sm:p-10 flex flex-col justify-between bg-slate-900">
+          <div className="md:col-span-7 p-8 sm:p-10 flex flex-col justify-between bg-white">
             <div className="space-y-6">
               <div>
-                <h3 className="text-sm font-bold text-indigo-400 uppercase tracking-wider">Get Started</h3>
-                <h2 className="text-xl font-extrabold text-white mt-1">Open a Project or Start Fresh</h2>
-                <p className="text-xs text-slate-400 mt-1">Select an option below to enter the interactive SEM workplace.</p>
+                <h3 className="text-sm font-bold text-indigo-600 uppercase tracking-wider">Get Started</h3>
+                <h2 className="text-xl font-extrabold text-slate-900 mt-1">Open a Project or Start Fresh</h2>
+                <p className="text-xs text-slate-500 mt-1">Select an option below to enter the interactive SEM workplace.</p>
               </div>
 
               {/* Action grid options */}
@@ -350,15 +343,15 @@ export default function App() {
                 <button
                   id="splash-new-project"
                   onClick={handleStartNewProject}
-                  className="group text-left p-5 bg-slate-800 hover:bg-slate-850 border border-slate-700/60 hover:border-indigo-500 rounded-2xl transition-all duration-200 cursor-pointer shadow-lg hover:shadow-indigo-500/5"
+                  className="group text-left p-5 bg-slate-50 hover:bg-indigo-50/20 border border-gray-250 hover:border-indigo-500 rounded-2xl transition-all duration-200 cursor-pointer shadow-sm hover:shadow-indigo-500/5 block"
                 >
-                  <div className="bg-indigo-500/10 text-indigo-400 p-2.5 rounded-xl w-fit group-hover:bg-indigo-600 group-hover:text-white transition duration-200">
+                  <div className="bg-indigo-100 text-indigo-600 p-2.5 rounded-xl w-fit group-hover:bg-indigo-600 group-hover:text-white transition duration-200">
                     <PlusCircle className="w-5 h-5 stroke-[2]" />
                   </div>
-                  <h4 className="text-sm font-bold text-white mt-4 flex items-center gap-1.5">
+                  <h4 className="text-sm font-bold text-slate-900 mt-4 flex items-center gap-1.5">
                     New Project
                   </h4>
-                  <p className="text-[11px] text-slate-400 mt-1.5 leading-relaxed">
+                  <p className="text-[11px] text-slate-600 mt-1.5 leading-relaxed">
                     Create an empty model canvas. Import any custom CSV or Excel dataset to build constructs from scratch.
                   </p>
                 </button>
@@ -366,7 +359,7 @@ export default function App() {
                 {/* Option 2: Open Project */}
                 <label
                   htmlFor="splash-load-project-input"
-                  className="group text-left p-5 bg-slate-800 hover:bg-slate-850 border border-slate-700/60 hover:border-indigo-500 rounded-2xl transition-all duration-200 cursor-pointer shadow-lg hover:shadow-indigo-500/5 block"
+                  className="group text-left p-5 bg-slate-50 hover:bg-indigo-50/20 border border-gray-250 hover:border-indigo-500 rounded-2xl transition-all duration-200 cursor-pointer shadow-sm hover:shadow-indigo-500/5 block cursor-pointer"
                 >
                   <input
                     id="splash-load-project-input"
@@ -375,21 +368,21 @@ export default function App() {
                     onChange={handleLoadProject}
                     className="hidden"
                   />
-                  <div className="bg-emerald-500/10 text-emerald-400 p-2.5 rounded-xl w-fit group-hover:bg-emerald-600 group-hover:text-white transition duration-200">
+                  <div className="bg-emerald-100 text-emerald-600 p-2.5 rounded-xl w-fit group-hover:bg-emerald-600 group-hover:text-white transition duration-200">
                     <FolderOpen className="w-5 h-5 stroke-[2]" />
                   </div>
-                  <h4 className="text-sm font-bold text-white mt-4 flex items-center gap-1.5">
+                  <h4 className="text-sm font-bold text-slate-900 mt-4 flex items-center gap-1.5">
                     Open Project (.pls)
                   </h4>
-                  <p className="text-[11px] text-slate-400 mt-1.5 leading-relaxed">
+                  <p className="text-[11px] text-slate-600 mt-1.5 leading-relaxed">
                     Load a saved project file containing your indicator configurations, constructs, and cached calculations.
                   </p>
                 </label>
               </div>
 
               {/* Sample Projects Section */}
-              <div className="pt-4 border-t border-slate-800/60">
-                <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">
+              <div className="pt-4 border-t border-gray-200">
+                <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">
                   Explore Preloaded Sample Models
                 </h4>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
@@ -397,13 +390,13 @@ export default function App() {
                   <button
                     id="splash-demo-corp"
                     onClick={() => handleStartDemoProject('corpRep')}
-                    className="text-left p-4 bg-slate-800/50 hover:bg-slate-800 border border-slate-700/40 hover:border-slate-600 rounded-xl transition cursor-pointer"
+                    className="text-left p-4 bg-slate-50 hover:bg-slate-100 border border-gray-200 hover:border-gray-350 rounded-xl transition cursor-pointer"
                   >
-                    <span className="text-[9px] font-bold text-indigo-400 bg-indigo-500/15 border border-indigo-500/20 px-2 py-0.5 rounded uppercase tracking-wider">
+                    <span className="text-[9px] font-bold text-indigo-600 bg-indigo-50 border border-indigo-100 px-2 py-0.5 rounded uppercase tracking-wider">
                       Classic Theory
                     </span>
-                    <h5 className="text-xs font-bold text-slate-200 mt-2">Corporate Reputation Model</h5>
-                    <p className="text-[10px] text-slate-400 mt-1 leading-relaxed">
+                    <h5 className="text-xs font-bold text-slate-800 mt-2">Corporate Reputation Model</h5>
+                    <p className="text-[10px] text-slate-500 mt-1 leading-relaxed">
                       Study drivers of customer satisfaction, loyalty, and reputation with 4 linked constructs.
                     </p>
                   </button>
@@ -412,13 +405,13 @@ export default function App() {
                   <button
                     id="splash-demo-tam"
                     onClick={() => handleStartDemoProject('tam')}
-                    className="text-left p-4 bg-slate-800/50 hover:bg-slate-800 border border-slate-700/40 hover:border-slate-600 rounded-xl transition cursor-pointer"
+                    className="text-left p-4 bg-slate-50 hover:bg-slate-100 border border-gray-200 hover:border-gray-350 rounded-xl transition cursor-pointer"
                   >
-                    <span className="text-[9px] font-bold text-emerald-400 bg-emerald-500/15 border border-emerald-500/20 px-2 py-0.5 rounded uppercase tracking-wider">
+                    <span className="text-[9px] font-bold text-emerald-600 bg-emerald-50 border border-emerald-100 px-2 py-0.5 rounded uppercase tracking-wider">
                       Tech Acceptance
                     </span>
-                    <h5 className="text-xs font-bold text-slate-200 mt-2">Technology Acceptance (TAM)</h5>
-                    <p className="text-[10px] text-slate-400 mt-1 leading-relaxed">
+                    <h5 className="text-xs font-bold text-slate-800 mt-2">Technology Acceptance (TAM)</h5>
+                    <p className="text-[10px] text-slate-500 mt-1 leading-relaxed">
                       Evaluate Perceived Usefulness & Ease of Use influences on System Intention.
                     </p>
                   </button>
@@ -427,9 +420,9 @@ export default function App() {
             </div>
 
             {/* Support notes or direct guidance */}
-            <div className="pt-6 text-[10px] text-slate-500 flex items-center justify-between">
+            <div className="pt-6 text-[10px] text-slate-400 flex items-center justify-between border-t border-gray-150">
               <span>All work is saved client-side only.</span>
-              <span className="text-indigo-400 hover:underline cursor-pointer" onClick={() => setShowSplash(false)}>Skip to Workspace &rarr;</span>
+              <span className="text-indigo-600 hover:underline cursor-pointer font-bold" onClick={() => setShowSplash(false)}>Skip to Workspace &rarr;</span>
             </div>
           </div>
         </div>
@@ -438,19 +431,19 @@ export default function App() {
   }
 
   return (
-    <div className={`flex flex-col h-screen w-screen overflow-hidden font-sans ${theme === 'dark' ? 'dark bg-slate-950 text-slate-100' : 'bg-[#f3f4f6] text-gray-950'}`}>
+    <div className="flex flex-col h-screen w-screen overflow-hidden font-sans bg-[#f3f4f6] text-gray-950">
       
       {/* 1. APP HEADER RAIL */}
-      <header className="flex items-center justify-between px-6 py-3.5 bg-white dark:bg-slate-900 border-b border-gray-200 dark:border-slate-800 shrink-0 z-20 shadow-sm transition-colors duration-150">
+      <header className="flex items-center justify-between px-6 py-3.5 bg-white border-b border-gray-200 shrink-0 z-20 shadow-sm transition-colors duration-150">
         <div className="flex items-center gap-2.5">
           <div className="bg-gradient-to-tr from-indigo-500 to-indigo-600 p-1.5 rounded-lg text-white shadow-lg shadow-indigo-500/20">
             <Sigma className="w-5 h-5 stroke-[2.5]" />
           </div>
           <div>
-            <h1 className="text-sm font-extrabold tracking-tight text-gray-900 dark:text-slate-100 flex items-center gap-1.5 leading-none">
-              PLS-SEM Studio <span className="text-[10px] bg-gray-100 dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 font-bold px-2 py-0.5 rounded border border-gray-200 dark:border-slate-700">v1.1</span>
+            <h1 className="text-sm font-extrabold tracking-tight text-gray-900 flex items-center gap-1.5 leading-none">
+              PLS-SEM Studio <span className="text-[10px] bg-gray-100 text-indigo-600 font-bold px-2 py-0.5 rounded border border-gray-200">v1.1</span>
             </h1>
-            <p className="text-[10px] text-gray-500 dark:text-slate-400 font-medium mt-1">
+            <p className="text-[10px] text-gray-500 font-medium mt-1">
               Interactive Path Modeling & Bootstrapping Resampling Engine
             </p>
           </div>
@@ -458,7 +451,7 @@ export default function App() {
 
         {/* Top middle validation notification panel */}
         {validationError && (
-          <div className="hidden lg:flex items-center gap-2 bg-rose-50 dark:bg-rose-950/20 border border-rose-200 dark:border-rose-900/40 text-rose-700 dark:text-rose-300 px-4 py-1.5 rounded-lg text-xs font-semibold animate-pulse max-w-lg">
+          <div className="hidden lg:flex items-center gap-2 bg-rose-50 border border-rose-200 text-rose-700 px-4 py-1.5 rounded-lg text-xs font-semibold animate-pulse max-w-lg">
             <AlertCircle className="w-4 h-4 shrink-0 text-rose-500" />
             <span className="truncate">{validationError}</span>
           </div>
@@ -466,23 +459,13 @@ export default function App() {
 
         {/* Global Control Buttons */}
         <div className="flex items-center gap-2">
-          {/* Theme Toggle button */}
-          <button
-            id="theme-toggle-btn"
-            onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}
-            className="p-1.5 rounded-lg border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-gray-50 dark:hover:bg-slate-700 text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-slate-200 transition shadow-sm cursor-pointer mr-1"
-            title={theme === 'light' ? 'Switch to Dark Theme' : 'Switch to Light Theme'}
-          >
-            {theme === 'light' ? <Moon className="w-4 h-4" /> : <Sun className="w-4 h-4 text-amber-500" />}
-          </button>
-
           {/* Home / Splash Screen button */}
           <button
             id="home-splash-btn"
             onClick={() => setShowSplash(true)}
-            className="px-3 py-1.5 text-xs font-bold border border-gray-200 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-700 text-gray-600 dark:text-slate-300 hover:text-gray-900 dark:hover:text-slate-100 bg-white dark:bg-slate-800 rounded-lg transition flex items-center gap-1.5 cursor-pointer shadow-sm"
+            className="px-3 py-1.5 text-xs font-bold border border-gray-200 hover:bg-gray-50 text-gray-600 hover:text-gray-900 bg-white rounded-lg transition flex items-center gap-1.5 cursor-pointer shadow-sm"
           >
-            <Home className="w-3.5 h-3.5 text-gray-500 dark:text-slate-400" />
+            <Home className="w-3.5 h-3.5 text-gray-500" />
             Home Screen
           </button>
 
@@ -496,9 +479,9 @@ export default function App() {
           />
           <label
             htmlFor="load-project-input"
-            className="px-3 py-1.5 text-xs font-bold border border-gray-200 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-700 text-gray-600 dark:text-slate-300 hover:text-gray-900 dark:hover:text-slate-100 bg-white dark:bg-slate-800 rounded-lg transition flex items-center gap-1.5 cursor-pointer shadow-sm"
+            className="px-3 py-1.5 text-xs font-bold border border-gray-200 hover:bg-gray-50 text-gray-600 hover:text-gray-900 bg-white rounded-lg transition flex items-center gap-1.5 cursor-pointer shadow-sm"
           >
-            <Upload className="w-3.5 h-3.5 text-gray-500 dark:text-slate-400" />
+            <Upload className="w-3.5 h-3.5 text-gray-500" />
             Load Project (.pls)
           </label>
 
@@ -512,19 +495,19 @@ export default function App() {
             Save Project (.pls)
           </button>
 
-          <span className="w-px h-5 bg-gray-200 dark:bg-slate-800 mx-1"></span>
+          <span className="w-px h-5 bg-gray-200 mx-1"></span>
 
           <button
             id="clear-all-btn"
             onClick={handleClearModel}
-            className="px-3 py-1.5 text-xs font-bold border border-gray-200 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-700 text-gray-600 dark:text-slate-300 hover:text-gray-900 dark:hover:text-slate-100 bg-white dark:bg-slate-800 rounded-lg transition"
+            className="px-3 py-1.5 text-xs font-bold border border-gray-200 hover:bg-gray-50 text-gray-600 hover:text-gray-900 bg-white rounded-lg transition"
           >
             Clear Model
           </button>
           <button
             id="reset-demo-btn"
             onClick={() => handleDatasetChange(builtInDatasets.corpRep, 'corpRep')}
-            className="px-3 py-1.5 text-xs font-bold bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/20 border border-indigo-200 dark:border-indigo-900/40 text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 rounded-lg transition"
+            className="px-3 py-1.5 text-xs font-bold bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 text-indigo-600 hover:text-indigo-700 rounded-lg transition"
           >
             Reload Corporate Demo
           </button>
@@ -532,10 +515,10 @@ export default function App() {
       </header>
 
       {/* 2. MAIN SPLIT COMPONENT BODY */}
-      <main className="flex-1 flex overflow-hidden bg-[#f3f4f6] dark:bg-slate-950 transition-colors duration-150">
+      <main className="flex-1 flex overflow-hidden bg-[#f3f4f6]">
         
         {/* LEFT COMPONENT: DATASET PANEL */}
-        <section className="w-[285px] border-r border-gray-200 dark:border-slate-800 flex flex-col shrink-0 overflow-hidden bg-white dark:bg-slate-900">
+        <section className="w-[285px] border-r border-gray-200 flex flex-col shrink-0 overflow-hidden bg-white">
           <DatasetPanel
             selectedDataset={selectedDataset}
             onDatasetChange={handleDatasetChange}
@@ -545,29 +528,29 @@ export default function App() {
         </section>
 
         {/* CENTER & BOTTOM COMPONENT: INTERACTIVE CANVAS AND RESULTS SHEETS */}
-        <section className="flex-1 flex flex-col overflow-hidden bg-[#f3f4f6] dark:bg-slate-950 p-4 gap-4">
+        <section className="flex-1 flex flex-col overflow-hidden bg-[#f3f4f6] p-4 gap-4">
           
           {/* Mobile/Tablet validation error display */}
           {validationError && (
-            <div className="lg:hidden flex items-center gap-2 bg-rose-50 dark:bg-rose-950/20 border border-rose-200 dark:border-rose-900/40 text-rose-700 dark:text-rose-300 px-4 py-2 rounded-lg text-xs font-semibold">
+            <div className="lg:hidden flex items-center gap-2 bg-rose-50 border border-rose-200 text-rose-700 px-4 py-2 rounded-lg text-xs font-semibold">
               <AlertCircle className="w-4 h-4 shrink-0 text-rose-500" />
               <span>{validationError}</span>
             </div>
           )}
 
           {/* Workbench layout switcher bar */}
-          <div className="flex items-center justify-between border border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-4 py-2 rounded-xl shrink-0 shadow-sm">
-            <span className="text-[11px] font-bold text-gray-500 dark:text-slate-400 flex items-center gap-1.5">
-              <Layers className="w-4 h-4 text-gray-400 dark:text-slate-500" /> Workbench Workspace Layout
+          <div className="flex items-center justify-between border border-gray-200 bg-white px-4 py-2 rounded-xl shrink-0 shadow-sm">
+            <span className="text-[11px] font-bold text-gray-500 flex items-center gap-1.5">
+              <Layers className="w-4 h-4 text-gray-400" /> Workbench Workspace Layout
             </span>
-            <div className="flex bg-gray-100 dark:bg-slate-800 p-1 rounded-lg border border-gray-200 dark:border-slate-700">
+            <div className="flex bg-gray-100 p-1 rounded-lg border border-gray-200">
               <button
                 id="layout-canvas"
                 onClick={() => setViewMode('canvas-only')}
                 className={`px-3 py-1 text-[10px] font-bold rounded transition ${
                   viewMode === 'canvas-only'
                     ? 'bg-indigo-600 text-white shadow-sm'
-                    : 'text-gray-500 dark:text-slate-400 hover:text-gray-850 dark:hover:text-slate-200'
+                    : 'text-gray-500 hover:text-gray-850'
                 }`}
               >
                 Model Canvas
@@ -578,7 +561,7 @@ export default function App() {
                 className={`px-3 py-1 text-[10px] font-bold rounded transition ${
                   viewMode === 'split'
                     ? 'bg-indigo-600 text-white shadow-sm'
-                    : 'text-gray-500 dark:text-slate-400 hover:text-gray-850 dark:hover:text-slate-200'
+                    : 'text-gray-500 hover:text-gray-850'
                 }`}
               >
                 Split View (Both)
@@ -589,7 +572,7 @@ export default function App() {
                 className={`px-3 py-1 text-[10px] font-bold rounded transition ${
                   viewMode === 'results-only'
                     ? 'bg-indigo-600 text-white shadow-sm'
-                    : 'text-gray-500 dark:text-slate-400 hover:text-gray-850 dark:hover:text-slate-200'
+                    : 'text-gray-500 hover:text-gray-850'
                 }`}
               >
                 Detailed Reports
@@ -636,10 +619,10 @@ export default function App() {
                     bootstrappingProgress={bootstrappingProgress}
                   />
                 ) : (
-                  <div className="h-full bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-xl flex flex-col items-center justify-center p-6 text-center select-none shadow-sm transition-colors duration-150">
-                    <Sigma className="w-10 h-10 text-gray-300 dark:text-slate-700 mb-2 animate-pulse" />
-                    <h3 className="text-sm font-bold text-gray-500 dark:text-slate-400">Statistical Analysis Pending</h3>
-                    <p className="text-xs text-gray-400 dark:text-slate-500 max-w-xs mt-1.5 leading-relaxed">
+                  <div className="h-full bg-white border border-gray-200 rounded-xl flex flex-col items-center justify-center p-6 text-center select-none shadow-sm transition-colors duration-150">
+                    <Sigma className="w-10 h-10 text-gray-300 mb-2 animate-pulse" />
+                    <h3 className="text-sm font-bold text-gray-500">Statistical Analysis Pending</h3>
+                    <p className="text-xs text-gray-400 max-w-xs mt-1.5 leading-relaxed">
                       Construct and link paths on the model canvas above, then click <strong>Run PLS-SEM</strong> to generate full coefficients, validity, and collinearity tables.
                     </p>
                   </div>
