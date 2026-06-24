@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import { PLSResults, Construct } from '../types';
+import { PLSResults, Construct, Dataset } from '../types';
 import { ArrowRight, CheckCircle, AlertTriangle, XCircle, BarChart3, ShieldCheck, Layers, Award, Info, RefreshCw, FileSpreadsheet } from 'lucide-react';
 import * as XLSX from 'xlsx';
 
 interface ResultsDashboardProps {
   results: PLSResults;
   constructs: Construct[];
+  dataset: Dataset;
   onRunBootstrapping: () => void;
   bootstrappingProgress: number | null;
 }
@@ -13,10 +14,11 @@ interface ResultsDashboardProps {
 export default function ResultsDashboard({
   results,
   constructs,
+  dataset,
   onRunBootstrapping,
   bootstrappingProgress
 }: ResultsDashboardProps) {
-  const [activeTab, setActiveTab] = useState<'paths' | 'effects' | 'reliability' | 'discriminant' | 'vif' | 'fit'>('paths');
+  const [activeTab, setActiveTab] = useState<'paths' | 'loadings' | 'effects' | 'reliability' | 'discriminant' | 'vif' | 'fit' | 'normality'>('paths');
   const [discTab, setDiscTab] = useState<'fornell' | 'htmt'>('fornell');
 
   const constructsMap = new Map(constructs.map(c => [c.id, c]));
@@ -179,12 +181,40 @@ export default function ResultsDashboard({
       'Collinearity Hazard': v.vif > 5 ? 'High Critical (>5)' : v.vif > 3.3 ? 'Warning (>3.3)' : 'OK (<3.3)'
     }));
 
-    // 7. Sheet 7: Model Fit
+    // 7. Sheet 7: Model Fit & R-squared
     const fitRows = [
-      { 'Metric Name': 'Standardized Root Mean Res. (SRMR)', 'Value': results.srmr, 'Threshold': '< 0.08 is recommended' },
-      { 'Metric Name': 'Converged Successfully', 'Value': results.converged ? 'Yes' : 'No', 'Threshold': '-' },
-      { 'Metric Name': 'Total Iterations Run', 'Value': results.iterationsRun, 'Threshold': '< 300' }
+      { 'Metric Name': 'Standardized Root Mean Res. (SRMR)', 'Value': results.srmr, 'Threshold/Info': '< 0.08 is recommended' },
+      { 'Metric Name': 'Converged Successfully', 'Value': results.converged ? 'Yes' : 'No', 'Threshold/Info': '-' },
+      { 'Metric Name': 'Total Iterations Run', 'Value': results.iterationsRun, 'Threshold/Info': '< 300' }
     ];
+
+    Object.entries(results.rSquare).forEach(([cId, val]) => {
+      const cName = constructsMap.get(cId)?.name ?? cId;
+      const adjVal = results.rSquareAdj?.[cId] ?? val;
+      fitRows.push({
+        'Metric Name': `R-squared (R2) - ${cName}`,
+        'Value': val,
+        'Threshold/Info': 'Explanatory Power: >=0.67 Substantial, >=0.33 Moderate, >=0.19 Weak'
+      });
+      fitRows.push({
+        'Metric Name': `Adjusted R-squared (R2 adj) - ${cName}`,
+        'Value': adjVal,
+        'Threshold/Info': 'Adjusted for number of predictors'
+      });
+    });
+
+    // 8. Sheet 8: Normality Diagnostics
+    const normalityRows = (results.normality || []).map(n => ({
+      'Indicator/Column Name': n.column,
+      'Sample Size (N)': dataset.rows.length,
+      'Mean': n.mean,
+      'Standard Deviation (SD)': n.stdDev,
+      'Skewness': n.skewness,
+      'Excess Kurtosis': n.kurtosis,
+      'Jarque-Bera Statistic': n.jbStat,
+      'JB p-value': n.pValue,
+      'Normal Distribution (p >= 0.05)': n.pValue >= 0.05 ? 'Yes' : 'No'
+    }));
 
     // Create workbook using XLSX library
     const wb = XLSX.utils.book_new();
@@ -196,6 +226,10 @@ export default function ResultsDashboard({
     XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(htmtRows), "Discriminant (HTMT)");
     XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(vifRows), "Collinearity VIF");
     XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(fitRows), "Model Fit");
+    
+    if (normalityRows.length > 0) {
+      XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(normalityRows), "Normality Diagnostics");
+    }
 
     XLSX.writeFile(wb, "PLS_SEM_Analysis_Detailed_Report.xlsx");
   };
@@ -248,6 +282,17 @@ export default function ResultsDashboard({
             }`}
           >
             Path Coefficients
+          </button>
+          <button
+            id="tab-loadings"
+            onClick={() => setActiveTab('loadings')}
+            className={`px-3.5 py-3 text-xs font-semibold border-b-2 transition-all ${
+              activeTab === 'loadings'
+                ? 'border-indigo-600 text-indigo-600'
+                : 'border-transparent text-gray-500 hover:text-gray-850'
+            }`}
+          >
+            Factor Loadings / Weights
           </button>
           <button
             id="tab-effects"
@@ -303,6 +348,17 @@ export default function ResultsDashboard({
             }`}
           >
             Model Fit
+          </button>
+          <button
+            id="tab-normality"
+            onClick={() => setActiveTab('normality')}
+            className={`px-3.5 py-3 text-xs font-semibold border-b-2 transition-all ${
+              activeTab === 'normality'
+                ? 'border-indigo-600 text-indigo-600'
+                : 'border-transparent text-gray-500 hover:text-gray-850'
+            }`}
+          >
+            Normality Testing
           </button>
         </div>
 
@@ -421,13 +477,162 @@ export default function ResultsDashboard({
                 <div>
                   <p className="font-semibold text-gray-900">Interpreting Resampling Significance:</p>
                   <p className="mt-1">
-                    Significance testing is based on <strong>{results.bootstrapSamplesCount} bootstrap samples</strong>. 
-                    The T-statistic represents the ratio of the original path estimate to its bootstrap standard error.
-                    An absolute T-value exceeding <strong>1.96</strong> corresponds to a two-tailed significance level of <strong>p &lt; 0.05</strong> (95% confidence).
+                     Significance testing is based on <strong>{results.bootstrapSamplesCount} bootstrap samples</strong>. 
+                     The T-statistic represents the ratio of the original path estimate to its bootstrap standard error.
+                     An absolute T-value exceeding <strong>1.96</strong> corresponds to a two-tailed significance level of <strong>p &lt; 0.05</strong> (95% confidence).
                   </p>
                 </div>
               </div>
             )}
+          </div>
+        )}
+
+        {/* TABS: FACTOR LOADINGS / WEIGHTS */}
+        {activeTab === 'loadings' && (
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-sm font-bold text-gray-950 flex items-center gap-1.5">
+                  <Layers className="w-4 h-4 text-indigo-600" /> Outer Model Factor Loadings and Weights
+                </h3>
+                <p className="text-xs text-gray-400 mt-0.5">
+                  Assesses the outer measurement model. Reflective indicators should have high outer loadings, while formative indicators are assessed by outer weights.
+                </p>
+              </div>
+
+              {!results.bootstrappingRun && (
+                <button
+                  id="dash-run-bootstrap-loadings"
+                  onClick={onRunBootstrapping}
+                  disabled={bootstrappingProgress !== null}
+                  className="flex items-center gap-1.5 px-3 py-1.5 border border-indigo-200 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-lg text-xs font-bold transition shadow-sm cursor-pointer"
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 ${bootstrappingProgress !== null ? 'animate-spin' : ''}`} />
+                  Test Significance (Run Bootstrapping)
+                </button>
+              )}
+            </div>
+
+            <div className="border border-gray-200 rounded-xl overflow-hidden shadow-sm">
+              <table className="w-full text-left border-collapse text-xs">
+                <thead>
+                  <tr className="bg-gray-50/50 border-b border-gray-200 text-gray-500 font-semibold uppercase tracking-wider text-[9px]">
+                    <th className="py-3 px-4">Latent Construct</th>
+                    <th className="py-3 px-4">Indicator</th>
+                    <th className="py-3 px-4">Type</th>
+                    <th className="py-3 px-4 text-center">Estimate Value</th>
+                    <th className="py-3 px-4 text-center">Std. Error (SE)</th>
+                    <th className="py-3 px-4 text-center">T-Statistic</th>
+                    <th className="py-3 px-4 text-center">P-Value</th>
+                    <th className="py-3 px-4 text-center">95% CI (Percentile)</th>
+                    <th className="py-3 px-4 text-center">Indicator Reliability</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100 text-gray-700">
+                  {results.indicatorResults.map((r, idx) => {
+                    const cNode = constructsMap.get(r.constructId);
+                    const isFormative = cNode?.type === 'formative';
+                    const estValue = isFormative ? r.weight : r.loading;
+                    const isSig = r.pValue !== undefined ? r.pValue < 0.05 : null;
+
+                    // Compute indicator reliability recommendation badge
+                    let statusBadge = null;
+                    if (isFormative) {
+                      statusBadge = (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold bg-blue-50 text-blue-700 border border-blue-100">
+                          Formative Weight
+                        </span>
+                      );
+                    } else {
+                      if (estValue >= 0.708) {
+                        statusBadge = (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                            Excellent (&ge; 0.708)
+                          </span>
+                        );
+                      } else if (estValue >= 0.40) {
+                        statusBadge = (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-amber-50 text-amber-700 border border-amber-100">
+                            Acceptable (0.4 - 0.7)
+                          </span>
+                        );
+                      } else {
+                        statusBadge = (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-extrabold bg-rose-50 text-rose-700 border border-rose-200">
+                            Critical Action (&lt; 0.40)
+                          </span>
+                        );
+                      }
+                    }
+
+                    return (
+                      <tr key={idx} className="hover:bg-gray-50/40 transition">
+                        <td className="py-3 px-4 font-bold text-gray-900">
+                          {cNode?.name ?? r.constructId}
+                        </td>
+                        <td className="py-3 px-4 font-semibold font-mono text-gray-800">
+                          {r.indicator}
+                        </td>
+                        <td className="py-3 px-4">
+                          <span className={`inline-flex px-1.5 py-0.5 rounded text-[9px] font-extrabold tracking-tight border ${
+                            isFormative ? 'bg-amber-50 text-amber-700 border-amber-200' : 'bg-indigo-50 text-indigo-700 border-indigo-200'
+                          }`}>
+                            {isFormative ? 'Formative' : 'Reflective'}
+                          </span>
+                        </td>
+                        <td className="py-3 px-4 text-center font-bold font-mono text-indigo-700">
+                          {estValue.toFixed(3)}
+                        </td>
+                        <td className="py-3 px-4 text-center font-mono text-gray-500">
+                          {r.standardError !== undefined ? r.standardError.toFixed(3) : '-'}
+                        </td>
+                        <td className="py-3 px-4 text-center font-mono font-semibold text-gray-700">
+                          {r.tValue !== undefined ? r.tValue.toFixed(3) : '-'}
+                        </td>
+                        <td className="py-3 px-4 text-center font-mono font-semibold">
+                          {r.pValue !== undefined ? (
+                            <span className={isSig ? 'text-emerald-600 font-bold' : 'text-gray-400 font-medium'}>
+                              {formatPValue(r.pValue)}
+                            </span>
+                          ) : '-'}
+                        </td>
+                        <td className="py-3 px-4 text-center font-mono text-gray-600">
+                          {r.ciLower !== undefined && r.ciUpper !== undefined ? (
+                            `[${r.ciLower.toFixed(3)}, ${r.ciUpper.toFixed(3)}]`
+                          ) : '-'}
+                        </td>
+                        <td className="py-3 px-4 text-center">
+                          {statusBadge}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                  {results.indicatorResults.length === 0 && (
+                    <tr>
+                      <td colSpan={9} className="py-8 text-center text-gray-400 italic">
+                        No indicator results available.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+            <div className="bg-gray-50/50 border border-gray-200 rounded-xl p-4 space-y-3 max-w-4xl text-xs text-gray-600">
+              <p className="font-bold text-gray-900 flex items-center gap-1">
+                <Info className="w-4 h-4 text-indigo-500 shrink-0" /> Outer Measurement Model Guidelines:
+              </p>
+              <ul className="list-disc pl-5 space-y-1.5">
+                <li>
+                  <strong>Reflective Loadings (Factor Loadings)</strong>: Loadings should ideally be <strong>&ge; 0.708</strong>. 
+                  This indicates that the construct explains more than 50% of the indicator's variance (indicator reliability). 
+                  Indicators with outer loadings between 0.40 and 0.70 should be considered for removal only if deletion increases Dijkstra-Henseler's $\rho_A$ or Composite Reliability above 0.70 or AVE above 0.50. Indicators with loadings &lt; 0.40 must always be deleted.
+                </li>
+                <li>
+                  <strong>Formative Weights</strong>: Formative indicators are evaluated on their relative contribution (outer weights) and significance (p-value). If an outer weight is not significant, but its corresponding outer loading is high (&ge; 0.50), the indicator should still be kept.
+                </li>
+              </ul>
+            </div>
           </div>
         )}
 
@@ -992,31 +1197,163 @@ export default function ResultsDashboard({
                 </p>
               </div>
 
-              {/* R-squared Summary Box */}
-              <div className="border border-slate-200 rounded-xl p-5 shadow-sm bg-white space-y-4">
-                <span className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-2">
-                  Endogenous Variance Explained (R²)
+              {/* R-squared Detail Table */}
+              <div className="border border-slate-200 rounded-xl p-5 shadow-sm bg-white space-y-4 col-span-1 md:col-span-2">
+                <span className="text-xs font-bold text-slate-500 uppercase tracking-wider block">
+                  Endogenous Variance Explained (R² & Adjusted R²)
                 </span>
-                <div className="space-y-3.5 max-h-[140px] overflow-y-auto">
-                  {Object.entries(results.rSquare).map(([cId, val]) => {
-                    const cName = constructsMap.get(cId)?.name ?? cId;
+                <div className="overflow-x-auto border border-slate-100 rounded-lg">
+                  <table className="w-full text-left border-collapse text-xs">
+                    <thead>
+                      <tr className="bg-slate-50/50 border-b border-slate-200 text-slate-500 font-semibold uppercase tracking-wider text-[9px]">
+                        <th className="py-2.5 px-4">Endogenous Target Construct</th>
+                        <th className="py-2.5 px-4 text-center">R-squared (R²)</th>
+                        <th className="py-2.5 px-4 text-center">Adjusted R-squared (R² adj)</th>
+                        <th className="py-2.5 px-4 text-center">Explanatory Strength</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100 text-gray-700">
+                      {Object.entries(results.rSquare).map(([cId, val]) => {
+                        const cName = constructsMap.get(cId)?.name ?? cId;
+                        const adjVal = results.rSquareAdj?.[cId] ?? val;
+                        
+                        let powerBadge = null;
+                        if (val >= 0.67) {
+                          powerBadge = (
+                            <span className="inline-flex items-center px-2.5 py-0.5 rounded text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-100">
+                              Substantial (&ge; 0.67)
+                            </span>
+                          );
+                        } else if (val >= 0.33) {
+                          powerBadge = (
+                            <span className="inline-flex items-center px-2.5 py-0.5 rounded text-[10px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-100">
+                              Moderate (&ge; 0.33)
+                            </span>
+                          );
+                        } else if (val >= 0.19) {
+                          powerBadge = (
+                            <span className="inline-flex items-center px-2.5 py-0.5 rounded text-[10px] font-medium bg-amber-50 text-amber-700 border border-amber-100">
+                              Weak (&ge; 0.19)
+                            </span>
+                          );
+                        } else {
+                          powerBadge = (
+                            <span className="inline-flex items-center px-2.5 py-0.5 rounded text-[10px] font-medium bg-gray-150 text-gray-500 border border-gray-250">
+                              Very Weak (&lt; 0.19)
+                            </span>
+                          );
+                        }
+
+                        return (
+                          <tr key={cId} className="hover:bg-slate-50/40">
+                            <td className="py-2.5 px-4 font-bold text-slate-900">{cName}</td>
+                            <td className="py-2.5 px-4 text-center font-bold font-mono text-indigo-700">{val.toFixed(3)}</td>
+                            <td className="py-2.5 px-4 text-center font-bold font-mono text-indigo-500">
+                              {adjVal.toFixed(3)}
+                            </td>
+                            <td className="py-2.5 px-4 text-center">
+                              {powerBadge}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                      {Object.keys(results.rSquare).length === 0 && (
+                        <tr>
+                          <td colSpan={4} className="py-6 text-center text-slate-400 italic">
+                            No endogenous target constructs found. Draw structural paths pointing to latent variables.
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* TABS: NORMALITY TESTING */}
+        {activeTab === 'normality' && (
+          <div className="space-y-6">
+            <div>
+              <h3 className="text-sm font-bold text-slate-800 flex items-center gap-1.5">
+                <ShieldCheck className="w-4 h-4 text-indigo-600" /> Empirical Normality Diagnostics
+              </h3>
+              <p className="text-xs text-slate-400 mt-0.5">
+                Jarque-Bera tests, Skewness, and Excess Kurtosis calculations for all numeric indicators in the loaded dataset.
+              </p>
+            </div>
+
+            <div className="border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+              <table className="w-full text-left border-collapse text-xs">
+                <thead>
+                  <tr className="bg-slate-50/50 border-b border-slate-200 text-slate-500 font-semibold uppercase tracking-wider text-[9px]">
+                    <th className="py-3 px-4">Dataset Column / Indicator</th>
+                    <th className="py-3 px-4 text-center">Mean</th>
+                    <th className="py-3 px-4 text-center">Std. Deviation (SD)</th>
+                    <th className="py-3 px-4 text-center">Skewness</th>
+                    <th className="py-3 px-4 text-center">Excess Kurtosis</th>
+                    <th className="py-3 px-4 text-center">Jarque-Bera Stat</th>
+                    <th className="py-3 px-4 text-center">JB p-value</th>
+                    <th className="py-3 px-4 text-center">Distribution Status</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 text-slate-700 font-mono">
+                  {results.normality?.map((n, idx) => {
+                    const isNormal = n.pValue >= 0.05;
+                    const skewSeverity = Math.abs(n.skewness) > 1 ? 'text-amber-600 font-bold' : 'text-slate-600';
+                    const kurtSeverity = Math.abs(n.kurtosis) > 1.5 ? 'text-amber-600 font-bold' : 'text-slate-600';
+
                     return (
-                      <div key={cId} className="space-y-1">
-                        <div className="flex justify-between text-xs font-semibold">
-                          <span className="text-slate-700">{cName}</span>
-                          <span className="font-mono text-indigo-600 font-bold">{val.toFixed(3)}</span>
-                        </div>
-                        <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
-                          <div className="bg-indigo-600 h-full rounded-full" style={{ width: `${val * 100}%` }} />
-                        </div>
-                      </div>
+                      <tr key={idx} className="hover:bg-slate-50/40 transition">
+                        <td className="py-3 px-4 font-bold text-slate-900 font-sans">{n.column}</td>
+                        <td className="py-3 px-4 text-center text-slate-600">{n.mean.toFixed(4)}</td>
+                        <td className="py-3 px-4 text-center text-slate-600">{n.stdDev.toFixed(4)}</td>
+                        <td className={`py-3 px-4 text-center ${skewSeverity}`}>{n.skewness.toFixed(4)}</td>
+                        <td className={`py-3 px-4 text-center ${kurtSeverity}`}>{n.kurtosis.toFixed(4)}</td>
+                        <td className="py-3 px-4 text-center text-slate-600 font-semibold">{n.jbStat.toFixed(4)}</td>
+                        <td className="py-3 px-4 text-center font-bold text-indigo-700">
+                          {formatPValue(n.pValue)}
+                        </td>
+                        <td className="py-3 px-4 text-center font-sans">
+                          {isNormal ? (
+                            <span className="inline-flex items-center gap-1 bg-emerald-50 text-emerald-700 text-[10px] font-bold px-2 py-0.5 rounded border border-emerald-100">
+                              <CheckCircle className="w-3 h-3" /> Normal (p &ge; 0.05)
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 bg-amber-50 text-amber-700 text-[10px] font-bold px-2 py-0.5 rounded border border-amber-100">
+                              <AlertTriangle className="w-3 h-3" /> Non-Normal (p &lt; 0.05)
+                            </span>
+                          )}
+                        </td>
+                      </tr>
                     );
                   })}
-                  {Object.keys(results.rSquare).length === 0 && (
-                    <p className="text-xs text-slate-400 italic py-2">
-                      No endogenous constructs found (requires structural paths pointing to them).
-                    </p>
+                  {(!results.normality || results.normality.length === 0) && (
+                    <tr>
+                      <td colSpan={8} className="py-8 text-center text-slate-400 italic font-sans">
+                        No normality diagnostics available. Upload a dataset to view distribution metrics.
+                      </td>
+                    </tr>
                   )}
+                </tbody>
+              </table>
+            </div>
+
+            <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 flex gap-3 text-xs text-slate-600 max-w-4xl">
+              <Info className="w-5 h-5 text-indigo-500 shrink-0 mt-0.5" />
+              <div>
+                <p className="font-semibold text-slate-800">Interpretive Guidelines for Normality Testing in PLS-SEM:</p>
+                <div className="mt-1.5 space-y-2 leading-relaxed">
+                  <p>
+                    <strong>Non-parametric Nature</strong>: PLS-SEM does not assume normally distributed data. However, highly non-normal data can artificially reduce bootstrapping precision, which inflates standard errors and diminishes statistical power (Hair et al., 2019).
+                  </p>
+                  <p>
+                    <strong>Skewness & Kurtosis</strong>: As a rule of thumb, skewness values between <strong>-1 and +1</strong> are acceptable. Excess kurtosis values between <strong>-1.5 and +1.5</strong> are acceptable. Extreme violations (e.g., skewness absolute value &gt; 2 or excess kurtosis absolute value &gt; 7) indicate heavy-tailed non-normality.
+                  </p>
+                  <p>
+                    <strong>Jarque-Bera Test</strong>: The Jarque-Bera test determines if skewness and kurtosis match a normal distribution. A <strong>p-value &lt; 0.05</strong> rejects the null hypothesis of normality, confirming statistically significant non-normality.
+                  </p>
                 </div>
               </div>
             </div>

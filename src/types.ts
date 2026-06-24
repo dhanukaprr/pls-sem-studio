@@ -23,6 +23,17 @@ export interface Dataset {
   rows: Record<string, number>[];
 }
 
+export interface NormalityResult {
+  column: string;
+  mean: number;
+  stdDev: number;
+  skewness: number;
+  kurtosis: number; // excess kurtosis
+  jbStat: number;
+  pValue: number;
+  isNormal: boolean;
+}
+
 // Results of PLS-SEM Algorithm
 export interface PathCoefficientResult {
   from: string;
@@ -77,6 +88,8 @@ export interface PLSResults {
   indicatorResults: IndicatorResult[];
   constructValidity: ConstructValidity[];
   rSquare: Record<string, number>; // constructId -> R-squared
+  rSquareAdj: Record<string, number>; // constructId -> Adjusted R-squared
+  normality: NormalityResult[]; // Column-level normality test results
   fSquare: Record<string, Record<string, number>>; // targetConstructId -> sourceConstructId -> f-squared
   correlations: Record<string, Record<string, number>>; // constructId -> constructId -> correlation
   htmt: Record<string, Record<string, number>>; // constructId -> constructId -> HTMT ratio

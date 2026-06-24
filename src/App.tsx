@@ -352,6 +352,7 @@ export default function App() {
                   <ResultsDashboard
                     results={results}
                     constructs={constructs}
+                    dataset={selectedDataset}
                     onRunBootstrapping={handleRunBootstrapping}
                     bootstrappingProgress={bootstrappingProgress}
                   />

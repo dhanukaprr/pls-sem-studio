@@ -1,5 +1,64 @@
-import { Dataset, Construct, StructuralPath, PLSResults, PathCoefficientResult, IndicatorResult, ConstructValidity, DiscriminantValidityRow, CollinearityVif } from '../types';
+import { Dataset, Construct, StructuralPath, PLSResults, PathCoefficientResult, IndicatorResult, ConstructValidity, DiscriminantValidityRow, CollinearityVif, NormalityResult } from '../types';
 import { getMean, getStdDev, standardize, correlation, runMultipleRegression, calculateVif, calculateHtmtRatio, transpose, multiplyMatrices } from './math';
+
+export function calculateNormality(values: number[]): {
+  mean: number;
+  stdDev: number;
+  skewness: number;
+  kurtosis: number;
+  jbStat: number;
+  pValue: number;
+  isNormal: boolean;
+} {
+  const n = values.length;
+  if (n < 3) {
+    return { mean: 0, stdDev: 0, skewness: 0, kurtosis: 0, jbStat: 0, pValue: 1.0, isNormal: true };
+  }
+
+  let sum = 0;
+  for (let i = 0; i < n; i++) sum += values[i];
+  const mean = sum / n;
+
+  let sumSq = 0;
+  let sumCub = 0;
+  let sumQuad = 0;
+
+  for (let i = 0; i < n; i++) {
+    const diff = values[i] - mean;
+    const diffSq = diff * diff;
+    sumSq += diffSq;
+    sumCub += diffSq * diff;
+    sumQuad += diffSq * diffSq;
+  }
+
+  const variance = sumSq / (n - 1);
+  const stdDev = Math.sqrt(variance);
+
+  if (stdDev === 0) {
+    return { mean, stdDev: 0, skewness: 0, kurtosis: 0, jbStat: 0, pValue: 1.0, isNormal: true };
+  }
+
+  const m2 = sumSq / n;
+  const m3 = sumCub / n;
+  const m4 = sumQuad / n;
+
+  const skewness = m3 / Math.pow(m2, 1.5);
+  const kurtosis = (m4 / Math.pow(m2, 2)) - 3; // excess kurtosis
+
+  const jbStat = (n / 6) * (skewness * skewness + (kurtosis * kurtosis) / 4);
+  const pValue = Math.exp(-jbStat / 2);
+  const isNormal = pValue >= 0.05;
+
+  return {
+    mean,
+    stdDev,
+    skewness,
+    kurtosis,
+    jbStat,
+    pValue,
+    isNormal
+  };
+}
 
 export function runPlsSem(
   dataset: Dataset,
@@ -15,6 +74,8 @@ export function runPlsSem(
       indicatorResults: [],
       constructValidity: [],
       rSquare: {},
+      rSquareAdj: {},
+      normality: [],
       fSquare: {},
       correlations: {},
       htmt: {},
@@ -188,6 +249,7 @@ export function runPlsSem(
   // Path Coefficients and R-Squared
   const pathCoefficients: PathCoefficientResult[] = [];
   const rSquare: Record<string, number> = {};
+  const rSquareAdj: Record<string, number> = {};
 
   for (const c of activeConstructs) {
     const predIds = predecessors[c.id];
@@ -204,7 +266,15 @@ export function runPlsSem(
     const targetY = Y[c.id];
     const regression = runMultipleRegression(targetY, X_mat);
     
-    rSquare[c.id] = regression.rSquared;
+    const r2 = regression.rSquared;
+    rSquare[c.id] = r2;
+
+    const k = predIds.length;
+    let r2Adj = r2;
+    if (N - k - 1 > 0) {
+      r2Adj = 1 - (1 - r2) * (N - 1) / (N - k - 1);
+    }
+    rSquareAdj[c.id] = r2Adj;
 
     predIds.forEach((pId, idx) => {
       pathCoefficients.push({
@@ -436,11 +506,29 @@ export function runPlsSem(
     srmr = srmrCount > 0 ? Math.sqrt(sumSqDiff / srmrCount) : 0;
   }
 
+  // Calculate Column-level Normality Diagnostics for all columns in dataset
+  const normality: NormalityResult[] = [];
+  for (const col of dataset.columns) {
+    const values = dataset.rows
+      .map(r => r[col])
+      .filter((v): v is number => typeof v === 'number' && !isNaN(v));
+    
+    if (values.length >= 3) {
+      const norm = calculateNormality(values);
+      normality.push({
+        column: col,
+        ...norm
+      });
+    }
+  }
+
   return {
     pathCoefficients,
     indicatorResults,
     constructValidity,
     rSquare,
+    rSquareAdj,
+    normality,
     fSquare,
     correlations,
     htmt,
