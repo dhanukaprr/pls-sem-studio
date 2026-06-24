@@ -2,6 +2,33 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Construct, StructuralPath, PLSResults, ConstructType, IndicatorAlignment } from '../types';
 import { Play, RotateCcw, Trash2, Link2, Plus, Move, Edit, Check, Settings, X, Download, ChevronDown, ZoomIn, ZoomOut } from 'lucide-react';
 
+function getRectIntersection(startX: number, startY: number, endX: number, endY: number, w: number, h: number) {
+  const dx = startX - endX;
+  const dy = startY - endY;
+  
+  if (dx === 0 && dy === 0) return { x: endX, y: endY };
+  
+  const halfW = w / 2;
+  const halfH = h / 2;
+  
+  let tX = Infinity;
+  let tY = Infinity;
+  
+  if (dx !== 0) {
+    tX = Math.abs(halfW / dx);
+  }
+  if (dy !== 0) {
+    tY = Math.abs(halfH / dy);
+  }
+  
+  const t = Math.min(tX, tY, 1);
+  
+  return {
+    x: endX + t * dx,
+    y: endY + t * dy
+  };
+}
+
 interface ModelCanvasProps {
   constructs: Construct[];
   paths: StructuralPath[];
@@ -14,6 +41,7 @@ interface ModelCanvasProps {
   bootstrappingProgress: number | null;
   selectedConstructId: string | null;
   onSelectConstruct: (id: string | null) => void;
+  theme?: 'light' | 'dark';
 }
 
 export default function ModelCanvas({
@@ -27,13 +55,15 @@ export default function ModelCanvas({
   onRunBootstrapping,
   bootstrappingProgress,
   selectedConstructId,
-  onSelectConstruct
+  onSelectConstruct,
+  theme = 'light'
 }: ModelCanvasProps) {
   const [activeTool, setActiveTool] = useState<'select' | 'add' | 'connect' | 'delete'>('select');
   const [hoveredNodeId, setHoveredNodeId] = useState<string | null>(null);
   const [pathStartId, setPathStartId] = useState<string | null>(null);
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
   const [draggedNodeId, setDraggedNodeId] = useState<string | null>(null);
+  const [draggedIndicator, setDraggedIndicator] = useState<{ constructId: string, indicator: string } | null>(null);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const [isEditingNode, setIsEditingNode] = useState(false);
   const [isExportDropdownOpen, setIsExportDropdownOpen] = useState(false);
@@ -193,6 +223,26 @@ export default function ModelCanvas({
     }
   };
 
+  const handleIndicatorMouseDown = (e: React.MouseEvent, constructId: string, indicator: string, currentCx: number, currentCy: number) => {
+    e.stopPropagation();
+    if (activeTool === 'select') {
+      setDraggedIndicator({ constructId, indicator });
+      onSelectConstruct(constructId);
+      
+      const rect = svgRef.current?.getBoundingClientRect();
+      if (rect) {
+        const rawX = e.clientX - rect.left;
+        const rawY = e.clientY - rect.top;
+        const canvasX = (rawX - panOffset.x) / zoom;
+        const canvasY = (rawY - panOffset.y) / zoom;
+        setDragOffset({
+          x: canvasX - currentCx,
+          y: canvasY - currentCy
+        });
+      }
+    }
+  };
+
   const handleMouseMove = (e: React.MouseEvent) => {
     if (!svgRef.current) return;
     const rect = svgRef.current.getBoundingClientRect();
@@ -216,6 +266,27 @@ export default function ModelCanvas({
           return c;
         })
       );
+    } else if (draggedIndicator) {
+      const { constructId, indicator } = draggedIndicator;
+      onUpdateConstructs(
+        constructs.map(c => {
+          if (c.id === constructId) {
+            const nextOffsets = { ...(c.indicatorOffsets ?? {}) };
+            const newX = Math.round(canvasX - dragOffset.x);
+            const newY = Math.round(canvasY - dragOffset.y);
+            // Store offset relative to the Latent Variable circle center
+            nextOffsets[indicator] = {
+              x: newX - c.x,
+              y: newY - c.y
+            };
+            return {
+              ...c,
+              indicatorOffsets: nextOffsets
+            };
+          }
+          return c;
+        })
+      );
     } else if (isPanning) {
       const dx = Math.abs(e.clientX - (panStart.x + panOffset.x));
       const dy = Math.abs(e.clientY - (panStart.y + panOffset.y));
@@ -231,6 +302,7 @@ export default function ModelCanvas({
 
   const handleMouseUp = () => {
     setDraggedNodeId(null);
+    setDraggedIndicator(null);
     setIsPanning(false);
   };
 
@@ -647,9 +719,9 @@ export default function ModelCanvas({
       <div className="flex-1 relative overflow-hidden select-none">
         {constructs.length === 0 && (
           <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center pointer-events-none">
-            <Plus className="w-10 h-10 text-gray-300 mb-2" />
-            <p className="text-sm font-semibold text-gray-500">Workspace Empty</p>
-            <p className="text-xs text-gray-400 max-w-xs mt-1">
+            <Plus className={`w-10 h-10 mb-2 ${theme === 'dark' ? 'text-slate-700' : 'text-gray-300'}`} />
+            <p className={`text-sm font-semibold ${theme === 'dark' ? 'text-slate-400' : 'text-gray-500'}`}>Workspace Empty</p>
+            <p className={`text-xs max-w-xs mt-1 ${theme === 'dark' ? 'text-slate-500' : 'text-gray-400'}`}>
               Select <strong>Add Latent</strong> to place constructs, then drag variables from the left dataset panel to assign them.
             </p>
           </div>
@@ -658,7 +730,7 @@ export default function ModelCanvas({
         <svg
           id="pls-sem-model-svg"
           ref={svgRef}
-          className={`w-full h-full min-h-[500px] min-w-[800px] bg-white transition-colors duration-150 ${isPanning ? 'cursor-grabbing' : activeTool === 'select' ? 'cursor-grab' : 'cursor-crosshair'}`}
+          className={`w-full h-full min-h-[500px] min-w-[800px] transition-colors duration-150 ${theme === 'dark' ? 'bg-slate-950' : 'bg-white'} ${isPanning ? 'cursor-grabbing' : activeTool === 'select' ? 'cursor-grab' : 'cursor-crosshair'}`}
           onClick={handleCanvasClick}
           onMouseDown={handleMouseDown}
           onMouseMove={handleMouseMove}
@@ -695,7 +767,7 @@ export default function ModelCanvas({
             patternUnits="userSpaceOnUse"
             patternTransform={`translate(${panOffset.x}, ${panOffset.y}) scale(${zoom})`}
           >
-            <circle cx="2" cy="2" r="1.2" fill="#e5e7eb" />
+            <circle cx="2" cy="2" r="1.2" fill={theme === 'dark' ? '#334155' : '#e5e7eb'} />
           </pattern>
           <rect width="100%" height="100%" fill="url(#grid)" className="pointer-events-none" />
 
@@ -865,50 +937,73 @@ export default function ModelCanvas({
             return (
               <g key={`indicators-${construct.id}`}>
                 {construct.indicators.map((ind, idx) => {
-                  let ix = 0;
-                  let iy = 0;
-                  let lineStartX = 0;
-                  let lineStartY = 0;
-                  let lineEndX = 0;
-                  let lineEndY = 0;
+                  let cx = construct.x;
+                  let cy = construct.y;
 
-                  // Determine position of indicator box relative to construct center
-                  if (alignment === 'left') {
-                    ix = construct.x - nodeRadius - 35 - indWidth;
-                    iy = construct.y + startOffset + idx * (indHeight + spacing);
-                    
-                    lineStartX = construct.x - nodeRadius;
-                    lineStartY = iy + indHeight / 2;
-                    lineEndX = ix + indWidth;
-                    lineEndY = iy + indHeight / 2;
-                  } else if (alignment === 'right') {
-                    ix = construct.x + nodeRadius + 35;
-                    iy = construct.y + startOffset + idx * (indHeight + spacing);
-                    
-                    lineStartX = construct.x + nodeRadius;
-                    lineStartY = iy + indHeight / 2;
-                    lineEndX = ix;
-                    lineEndY = iy + indHeight / 2;
-                  } else if (alignment === 'top') {
-                    const horizLength = K * indWidth + (K - 1) * spacing;
-                    const hStart = -horizLength / 2;
-                    ix = construct.x + hStart + idx * (indWidth + spacing);
-                    iy = construct.y - nodeRadius - 35 - indHeight;
-                    
-                    lineStartX = ix + indWidth / 2;
-                    lineStartY = construct.y - nodeRadius;
-                    lineEndX = ix + indWidth / 2;
-                    lineEndY = iy + indHeight;
-                  } else { // bottom
-                    const horizLength = K * indWidth + (K - 1) * spacing;
-                    const hStart = -horizLength / 2;
-                    ix = construct.x + hStart + idx * (indWidth + spacing);
-                    iy = construct.y + nodeRadius + 35;
-                    
-                    lineStartX = ix + indWidth / 2;
-                    lineStartY = construct.y + nodeRadius;
-                    lineEndX = ix + indWidth / 2;
-                    lineEndY = iy;
+                  // If custom offset is defined, use it. Otherwise, compute the default aligned position.
+                  if (construct.indicatorOffsets && construct.indicatorOffsets[ind]) {
+                    cx = construct.x + construct.indicatorOffsets[ind].x;
+                    cy = construct.y + construct.indicatorOffsets[ind].y;
+                  } else {
+                    let ixDefault = 0;
+                    let iyDefault = 0;
+                    if (alignment === 'left') {
+                      ixDefault = construct.x - nodeRadius - 35 - indWidth;
+                      iyDefault = construct.y + startOffset + idx * (indHeight + spacing);
+                    } else if (alignment === 'right') {
+                      ixDefault = construct.x + nodeRadius + 35;
+                      iyDefault = construct.y + startOffset + idx * (indHeight + spacing);
+                    } else if (alignment === 'top') {
+                      const horizLength = K * indWidth + (K - 1) * spacing;
+                      const hStart = -horizLength / 2;
+                      ixDefault = construct.x + hStart + idx * (indWidth + spacing);
+                      iyDefault = construct.y - nodeRadius - 35 - indHeight;
+                    } else { // bottom
+                      const horizLength = K * indWidth + (K - 1) * spacing;
+                      const hStart = -horizLength / 2;
+                      ixDefault = construct.x + hStart + idx * (indWidth + spacing);
+                      iyDefault = construct.y + nodeRadius + 35;
+                    }
+                    cx = ixDefault + indWidth / 2;
+                    cy = iyDefault + indHeight / 2;
+                  }
+
+                  const ix = cx - indWidth / 2;
+                  const iy = cy - indHeight / 2;
+
+                  // Compute straight line start and end from circle center to indicator center
+                  const dx = cx - construct.x;
+                  const dy = cy - construct.y;
+                  const dist = Math.sqrt(dx * dx + dy * dy);
+
+                  let lineStartX = construct.x;
+                  let lineStartY = construct.y;
+                  let lineEndX = cx;
+                  let lineEndY = cy;
+
+                  if (dist > 0) {
+                    const dirX = dx / dist;
+                    const dirY = dy / dist;
+
+                    // Circle boundary intersection
+                    lineStartX = construct.x + nodeRadius * dirX;
+                    lineStartY = construct.y + nodeRadius * dirY;
+
+                    // Indicator rect boundary intersection
+                    const intersect = getRectIntersection(construct.x, construct.y, cx, cy, indWidth, indHeight);
+
+                    if (construct.type === 'reflective') {
+                      // Circle -> Indicator (Reflective)
+                      // Offset slightly for arrow marker
+                      lineEndX = intersect.x - dirX * 4;
+                      lineEndY = intersect.y - dirY * 4;
+                    } else {
+                      // Indicator -> Circle (Formative)
+                      lineStartX = intersect.x;
+                      lineStartY = intersect.y;
+                      lineEndX = construct.x + (nodeRadius + 6) * dirX;
+                      lineEndY = construct.y + (nodeRadius + 6) * dirY;
+                    }
                   }
 
                   // Retrieve statistical loading/weight
@@ -918,21 +1013,21 @@ export default function ModelCanvas({
 
                   // Setup indicators paths arrows based on measurement type
                   let markerEnd = undefined;
-                  let markerStart = undefined;
                   let indicatorLineColor = '#94a3b8';
 
                   if (construct.type === 'reflective') {
-                    // Circle -> Indicator (Reflective)
                     markerEnd = 'url(#arrow-reflective)';
                     indicatorLineColor = '#3b82f6';
                   } else {
-                    // Indicator -> Circle (Formative)
                     markerEnd = 'url(#arrow-formative)';
                     indicatorLineColor = '#f59e0b';
                   }
 
                   return (
-                    <g key={`ind-${construct.id}-${ind}`} className="group/ind">
+                    <g 
+                      key={`ind-${construct.id}-${ind}`} 
+                      className="group/ind"
+                    >
                       {/* Measurement Line */}
                       <line
                         x1={lineStartX}
@@ -955,7 +1050,8 @@ export default function ModelCanvas({
                         fill="#f8fafc"
                         stroke="#cbd5e1"
                         strokeWidth="1"
-                        className="filter drop-shadow-[0_1px_1px_rgba(0,0,0,0.02)] transition group-hover/ind:stroke-slate-400"
+                        onMouseDown={(e) => handleIndicatorMouseDown(e, construct.id, ind, cx, cy)}
+                        className={`filter drop-shadow-[0_1px_1px_rgba(0,0,0,0.02)] transition group-hover/ind:stroke-slate-400 ${activeTool === 'select' ? 'cursor-grab active:cursor-grabbing' : ''}`}
                       />
 
                       {/* Indicator text */}
@@ -963,7 +1059,8 @@ export default function ModelCanvas({
                         x={ix + indWidth / 2}
                         y={iy + 14}
                         textAnchor="middle"
-                        className="text-[9px] font-semibold text-slate-700"
+                        onMouseDown={(e) => handleIndicatorMouseDown(e, construct.id, ind, cx, cy)}
+                        className={`text-[9px] font-semibold text-slate-700 select-none ${activeTool === 'select' ? 'cursor-grab active:cursor-grabbing' : ''}`}
                       >
                         {ind}
                       </text>
@@ -972,15 +1069,24 @@ export default function ModelCanvas({
                       {indRes && (
                         (() => {
                           const val = construct.type === 'reflective' ? indRes.loading : indRes.weight;
-                          let textX = (lineStartX + lineEndX) / 2;
+                          const textX = (lineStartX + lineEndX) / 2;
                           let textY = (lineStartY + lineEndY) / 2 - 4;
                           
-                          // Adjust text slightly based on orientation to not overlap lines
-                          if (alignment === 'left' || alignment === 'right') {
-                            textY = iy + indHeight / 2 - 5;
-                          } else {
-                            textX = ix + indWidth / 2 + 16;
-                            textY = (lineStartY + lineEndY) / 2 + 4;
+                          if (dist > 0) {
+                            // Perpendicular vector for shifting the text slightly away from the line
+                            const px = -dy / dist;
+                            const py = dx / dist;
+                            const shift = 6;
+                            return (
+                              <text
+                                x={textX + px * shift}
+                                y={textY + py * shift}
+                                textAnchor="middle"
+                                className="text-[8px] font-bold fill-slate-500 font-mono"
+                              >
+                                {val.toFixed(2)}
+                              </text>
+                            );
                           }
 
                           return (
@@ -988,7 +1094,7 @@ export default function ModelCanvas({
                               x={textX}
                               y={textY}
                               textAnchor="middle"
-                              className="text-[8px] font-bold fill-slate-500"
+                              className="text-[8px] font-bold fill-slate-500 font-mono"
                             >
                               {val.toFixed(2)}
                             </text>
@@ -1023,10 +1129,10 @@ export default function ModelCanvas({
             const r2 = results?.rSquare[node.id];
             
             // Outer circle border color
-            let strokeColor = '#9ca3af';
+            let strokeColor = theme === 'dark' ? '#475569' : '#9ca3af';
             let strokeWidth = '1.5';
             if (isSelected) {
-              strokeColor = '#4f46e5'; // Indigo-600 for selection
+              strokeColor = '#6366f1'; // Indigo-500 for selection
               strokeWidth = '2.5';
             } else if (isHovered) {
               strokeColor = '#6366f1'; // Indigo-500
@@ -1034,12 +1140,22 @@ export default function ModelCanvas({
 
             // Clean background fill selection based on type and endogeneity
             let nodeFill = '#ffffff';
-            if (r2 !== undefined) {
-              nodeFill = '#eff6ff'; // Endogenous soft blue/indigo tint
-            } else if (node.type === 'formative') {
-              nodeFill = '#fffbeb'; // Warm formative yellow tint
+            if (theme === 'dark') {
+              if (r2 !== undefined) {
+                nodeFill = '#1e1b4b'; // Endogenous deep indigo
+              } else if (node.type === 'formative') {
+                nodeFill = '#311c00'; // Warm dark formative
+              } else {
+                nodeFill = '#1e293b'; // Slate dark reflective
+              }
             } else {
-              nodeFill = '#f8fafc'; // Crisp reflective slate tint
+              if (r2 !== undefined) {
+                nodeFill = '#eff6ff'; // Endogenous soft blue/indigo tint
+              } else if (node.type === 'formative') {
+                nodeFill = '#fffbeb'; // Warm formative yellow tint
+              } else {
+                nodeFill = '#f8fafc'; // Crisp reflective slate tint
+              }
             }
 
             return (
@@ -1081,7 +1197,7 @@ export default function ModelCanvas({
                   x={node.x}
                   y={r2 !== undefined ? node.y - 4 : node.y + 4}
                   textAnchor="middle"
-                  className="text-[10px] font-bold fill-gray-900 select-none"
+                  className={`text-[10px] font-bold select-none ${theme === 'dark' ? 'fill-slate-100' : 'fill-gray-900'}`}
                 >
                   {node.name.length > 14 ? `${node.name.substring(0, 12)}...` : node.name}
                   <title>{node.name}</title>
@@ -1093,7 +1209,7 @@ export default function ModelCanvas({
                     x={node.x}
                     y={node.y + 11}
                     textAnchor="middle"
-                    className="text-[9px] font-bold fill-indigo-600 font-mono"
+                    className={`text-[9px] font-bold font-mono ${theme === 'dark' ? 'fill-indigo-400' : 'fill-indigo-600'}`}
                   >
                     R² = {r2.toFixed(3)}
                   </text>

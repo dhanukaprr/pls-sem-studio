@@ -167,11 +167,11 @@ export default function DatasetPanel({
   };
 
   return (
-    <div className="flex flex-col h-full bg-white">
+    <div className="flex flex-col h-full bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 transition-colors duration-150">
       {/* Selector and Dropdown section */}
-      <div className="p-4 border-b border-gray-200 bg-gray-50/50 space-y-3">
-        <h3 className="text-xs font-bold text-gray-700 flex items-center gap-1.5 uppercase tracking-wider">
-          <Database className="w-4 h-4 text-indigo-600" /> Active Dataset
+      <div className="p-4 border-b border-gray-200 dark:border-slate-800 bg-gray-50/50 dark:bg-slate-950/20 space-y-3">
+        <h3 className="text-xs font-bold text-gray-700 dark:text-slate-300 flex items-center gap-1.5 uppercase tracking-wider">
+          <Database className="w-4 h-4 text-indigo-600 dark:text-indigo-400" /> Active Dataset
         </h3>
         
         <div className="grid grid-cols-2 gap-2">
@@ -181,7 +181,7 @@ export default function DatasetPanel({
             className={`px-3 py-2 text-[11px] font-bold rounded-lg border text-center transition cursor-pointer ${
               selectedDataset.name.includes('Corporate')
                 ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm'
-                : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'
+                : 'bg-white dark:bg-slate-800 text-gray-600 dark:text-slate-300 border-gray-200 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-750'
             }`}
           >
             Corporate Rep (Demo)
@@ -192,7 +192,7 @@ export default function DatasetPanel({
             className={`px-3 py-2 text-[11px] font-bold rounded-lg border text-center transition cursor-pointer ${
               selectedDataset.name.includes('Acceptance')
                 ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm'
-                : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'
+                : 'bg-white dark:bg-slate-800 text-gray-600 dark:text-slate-300 border-gray-200 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-750'
             }`}
           >
             TAM Model (Demo)
@@ -200,11 +200,11 @@ export default function DatasetPanel({
         </div>
 
         {/* Selected File Badge info */}
-        <div className="bg-white px-3 py-2 rounded-lg border border-gray-200 shadow-sm">
-          <p className="text-xs font-semibold text-gray-800 truncate" title={selectedDataset.name}>
+        <div className="bg-white dark:bg-slate-800 px-3 py-2 rounded-lg border border-gray-200 dark:border-slate-700 shadow-sm">
+          <p className="text-xs font-semibold text-gray-800 dark:text-slate-200 truncate" title={selectedDataset.name}>
             {selectedDataset.name}
           </p>
-          <div className="flex items-center gap-3 mt-1.5 text-[10px] text-gray-400 font-bold font-mono">
+          <div className="flex items-center gap-3 mt-1.5 text-[10px] text-gray-400 dark:text-slate-400 font-bold font-mono">
             <span>COLUMNS: {selectedDataset.columns.length}</span>
             <span>ROWS (N): {selectedDataset.rows.length}</span>
           </div>
@@ -212,7 +212,7 @@ export default function DatasetPanel({
       </div>
 
       {/* CSV or Excel File Drag & Drop Upload Zone */}
-      <div className="p-4 border-b border-gray-200">
+      <div className="p-4 border-b border-gray-200 dark:border-slate-800">
         <div
           id="csv-drag-upload-zone"
           onDragEnter={handleDrag}
@@ -222,13 +222,13 @@ export default function DatasetPanel({
           onClick={() => fileInputRef.current?.click()}
           className={`border-2 border-dashed rounded-xl p-4 text-center cursor-pointer transition flex flex-col items-center justify-center ${
             dragOverActive
-              ? 'border-indigo-600 bg-indigo-50/50'
-              : 'border-gray-300 hover:border-indigo-500 bg-gray-50/50 hover:bg-white'
+              ? 'border-indigo-600 bg-indigo-50/50 dark:bg-indigo-950/20'
+              : 'border-gray-300 dark:border-slate-700 hover:border-indigo-500 dark:hover:border-indigo-400 bg-gray-50/50 dark:bg-slate-850/40 hover:bg-white dark:hover:bg-slate-800'
           }`}
         >
-          <Upload className="w-6 h-6 text-gray-400 mb-1.5" />
-          <span className="text-xs font-bold text-gray-700">Upload custom CSV or Excel dataset</span>
-          <span className="text-[10px] text-gray-400 mt-0.5">Drag CSV/Excel file or click here</span>
+          <Upload className="w-6 h-6 text-gray-400 dark:text-slate-500 mb-1.5" />
+          <span className="text-xs font-bold text-gray-700 dark:text-slate-300">Upload custom CSV or Excel dataset</span>
+          <span className="text-[10px] text-gray-400 dark:text-slate-500 mt-0.5">Drag CSV/Excel file or click here</span>
           <input
             ref={fileInputRef}
             type="file"
@@ -239,7 +239,7 @@ export default function DatasetPanel({
         </div>
 
         {errorMsg && (
-          <div className="mt-3 p-2.5 bg-rose-50 border border-rose-100 text-rose-600 rounded-lg text-[10px] flex gap-1.5 font-medium leading-relaxed">
+          <div className="mt-3 p-2.5 bg-rose-50 dark:bg-rose-950/20 border border-rose-100 dark:border-rose-900/40 text-rose-600 dark:text-rose-400 rounded-lg text-[10px] flex gap-1.5 font-medium leading-relaxed">
             <AlertCircle className="w-3.5 h-3.5 shrink-0" />
             <span>{errorMsg}</span>
           </div>
@@ -248,20 +248,20 @@ export default function DatasetPanel({
 
       {/* Manifest Variables / Drag items List */}
       <div className="flex-1 overflow-y-auto p-4 space-y-2">
-        <div className="flex items-center justify-between text-gray-500 font-bold text-[10px] uppercase tracking-wider mb-2">
+        <div className="flex items-center justify-between text-gray-500 dark:text-slate-400 font-bold text-[10px] uppercase tracking-wider mb-2">
           <span>Indicators / Columns</span>
           <span>{assignedVariables.size} / {selectedDataset.columns.length} assigned</span>
         </div>
 
         {/* Bulk Action Controls */}
-        <div className="bg-gray-50/50 rounded-xl border border-gray-200 p-2.5 mb-3.5 space-y-2 text-xs">
+        <div className="bg-gray-50/50 dark:bg-slate-950/20 rounded-xl border border-gray-200 dark:border-slate-800 p-2.5 mb-3.5 space-y-2 text-xs">
           <div className="flex items-center justify-between">
-            <span className="font-bold text-gray-700">Multi-Select Actions</span>
+            <span className="font-bold text-gray-700 dark:text-slate-300">Multi-Select Actions</span>
             <div className="flex gap-1.5">
               <button
                 type="button"
                 onClick={handleSelectAllIndicators}
-                className="px-2 py-1 bg-white hover:bg-gray-50 border border-gray-200 hover:border-gray-300 rounded text-[10px] text-indigo-600 font-bold transition cursor-pointer shadow-sm"
+                className="px-2 py-1 bg-white dark:bg-slate-850 hover:bg-gray-50 dark:hover:bg-slate-800 border border-gray-200 dark:border-slate-700 hover:border-gray-300 dark:hover:border-slate-600 rounded text-[10px] text-indigo-600 dark:text-indigo-400 font-bold transition cursor-pointer shadow-sm"
               >
                 Select All
               </button>
@@ -269,7 +269,7 @@ export default function DatasetPanel({
                 type="button"
                 onClick={handleDeselectAllIndicators}
                 disabled={selectedIndicators.length === 0}
-                className="px-2 py-1 bg-white hover:bg-gray-50 border border-gray-200 hover:border-gray-300 rounded text-[10px] text-gray-600 hover:text-gray-800 font-bold transition disabled:opacity-40 disabled:pointer-events-none cursor-pointer shadow-sm"
+                className="px-2 py-1 bg-white dark:bg-slate-850 hover:bg-gray-50 dark:hover:bg-slate-800 border border-gray-200 dark:border-slate-700 hover:border-gray-300 dark:hover:border-slate-600 rounded text-[10px] text-gray-600 dark:text-slate-400 hover:text-gray-800 dark:hover:text-slate-200 font-bold transition disabled:opacity-40 disabled:pointer-events-none cursor-pointer shadow-sm"
               >
                 Deselect All
               </button>
@@ -277,11 +277,11 @@ export default function DatasetPanel({
           </div>
 
           {selectedIndicators.length > 0 ? (
-            <div className="bg-indigo-50/50 border border-indigo-100 rounded-lg p-2 space-y-1.5">
-              <div className="font-semibold text-indigo-900 text-[11px]">
+            <div className="bg-indigo-50/50 dark:bg-indigo-950/10 border border-indigo-100 dark:border-indigo-900/30 rounded-lg p-2 space-y-1.5">
+              <div className="font-semibold text-indigo-900 dark:text-indigo-300 text-[11px]">
                 {selectedIndicators.length} columns selected
               </div>
-              <div className="text-[10px] text-gray-500 italic mb-1 leading-relaxed">
+              <div className="text-[10px] text-gray-500 dark:text-slate-400 italic mb-1 leading-relaxed">
                 Drag any selected item to a construct OR click a target below to assign them all:
               </div>
               {constructs.length > 0 ? (
@@ -290,20 +290,20 @@ export default function DatasetPanel({
                     <button
                       key={c.id}
                       onClick={() => handleAssignSelectedToConstruct(c.id)}
-                      className="w-full text-left bg-white hover:bg-indigo-600 hover:text-white border border-gray-200 hover:border-indigo-600 rounded px-2 py-1 text-[10px] font-bold text-gray-700 transition truncate cursor-pointer"
+                      className="w-full text-left bg-white dark:bg-slate-800 hover:bg-indigo-600 dark:hover:bg-indigo-600 border border-gray-200 dark:border-slate-700 hover:border-indigo-600 dark:hover:border-indigo-600 rounded px-2 py-1 text-[10px] font-bold text-gray-700 dark:text-slate-200 hover:text-white dark:hover:text-white transition truncate cursor-pointer"
                     >
                       Assign to: {c.name}
                     </button>
                   ))}
                 </div>
               ) : (
-                <div className="text-[10px] text-gray-400 font-medium italic">
+                <div className="text-[10px] text-gray-400 dark:text-slate-500 font-medium italic">
                   Create a latent variable on the canvas first to assign items.
                 </div>
               )}
             </div>
           ) : (
-            <div className="text-[10px] text-gray-400 font-medium italic leading-relaxed">
+            <div className="text-[10px] text-gray-400 dark:text-slate-500 font-medium italic leading-relaxed">
               Check indicators below to group-drag them or assign them in bulk with one click.
             </div>
           )}
@@ -332,12 +332,12 @@ export default function DatasetPanel({
                 draggable={true}
                 onDragStart={handleDragStart}
                 onDragEnd={handleDragEnd}
-                className={`border rounded-lg p-2 bg-white transition group cursor-grab active:cursor-grabbing hover:shadow-sm ${
+                className={`border rounded-lg p-2 transition group cursor-grab active:cursor-grabbing hover:shadow-sm ${
                   isSelected
-                    ? 'border-indigo-300 bg-indigo-50/10'
+                    ? 'border-indigo-300 dark:border-indigo-800 bg-indigo-50/10 dark:bg-indigo-950/10'
                     : isAssigned
-                    ? 'border-emerald-200 bg-emerald-50/10 hover:border-emerald-300'
-                    : 'border-gray-200 hover:border-gray-300'
+                    ? 'border-emerald-200 dark:border-emerald-900 bg-emerald-50/10 dark:bg-emerald-950/5 hover:border-emerald-300 dark:hover:border-emerald-800'
+                    : 'border-gray-200 dark:border-slate-800 hover:border-gray-300 dark:hover:border-slate-700 bg-white dark:bg-slate-850'
                 }`}
               >
                 <div className="flex items-center justify-between">
@@ -347,24 +347,24 @@ export default function DatasetPanel({
                       checked={isSelected}
                       onClick={(e) => handleToggleSelectIndicator(col, e)}
                       onChange={() => {}}
-                      className="w-3.5 h-3.5 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+                      className="w-3.5 h-3.5 rounded border-gray-300 dark:border-slate-700 text-indigo-600 dark:text-indigo-500 focus:ring-indigo-500 cursor-pointer dark:bg-slate-800"
                     />
-                    <BarChart className="w-3.5 h-3.5 text-gray-400 group-hover:text-indigo-500 transition" />
-                    <span className="text-xs font-bold text-gray-700 truncate" title="Drag me or select me!">
+                    <BarChart className="w-3.5 h-3.5 text-gray-400 dark:text-slate-500 group-hover:text-indigo-500 transition" />
+                    <span className="text-xs font-bold text-gray-700 dark:text-slate-200 truncate" title="Drag me or select me!">
                       {col}
                     </span>
                   </div>
 
                   <div className="flex items-center gap-1.5 shrink-0">
                     {isAssigned && (
-                      <span className="inline-flex items-center bg-emerald-50 border border-emerald-100 text-emerald-700 text-[8px] font-bold px-1.5 py-0.5 rounded-full">
-                        <Check className="w-2.5 h-2.5 mr-0.5 text-emerald-600" /> Assigned
+                      <span className="inline-flex items-center bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-100 dark:border-emerald-900/40 text-emerald-700 dark:text-emerald-400 text-[8px] font-bold px-1.5 py-0.5 rounded-full">
+                        <Check className="w-2.5 h-2.5 mr-0.5 text-emerald-600 dark:text-emerald-400" /> Assigned
                       </span>
                     )}
 
                     <button
                       onClick={() => setExpandedVar(isExpanded ? null : col)}
-                      className="p-1 text-gray-400 hover:text-gray-600 rounded-md hover:bg-gray-100"
+                      className="p-1 text-gray-400 dark:text-slate-500 hover:text-gray-600 dark:hover:text-slate-350 rounded-md hover:bg-gray-100 dark:hover:bg-slate-800"
                     >
                       {isExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
                     </button>
@@ -376,11 +376,11 @@ export default function DatasetPanel({
                   (() => {
                     const stats = getStats(col);
                     return (
-                      <div className="mt-2 pt-2 border-t border-gray-100 grid grid-cols-2 gap-2 text-[10px] text-gray-500 font-mono font-medium">
-                        <div>Mean: <span className="text-gray-800 font-semibold">{stats.mean.toFixed(3)}</span></div>
-                        <div>Std.Dev: <span className="text-gray-800 font-semibold">{stats.std.toFixed(3)}</span></div>
-                        <div>Min: <span className="text-gray-800 font-semibold">{stats.min}</span></div>
-                        <div>Max: <span className="text-gray-800 font-semibold">{stats.max}</span></div>
+                      <div className="mt-2 pt-2 border-t border-gray-100 dark:border-slate-800 grid grid-cols-2 gap-2 text-[10px] text-gray-500 dark:text-slate-400 font-mono font-medium">
+                        <div>Mean: <span className="text-gray-800 dark:text-slate-200 font-semibold">{stats.mean.toFixed(3)}</span></div>
+                        <div>Std.Dev: <span className="text-gray-800 dark:text-slate-200 font-semibold">{stats.std.toFixed(3)}</span></div>
+                        <div>Min: <span className="text-gray-800 dark:text-slate-200 font-semibold">{stats.min}</span></div>
+                        <div>Max: <span className="text-gray-800 dark:text-slate-200 font-semibold">{stats.max}</span></div>
                       </div>
                     );
                   })()

@@ -268,17 +268,17 @@ export default function ResultsDashboard({
   };
 
   return (
-    <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden flex flex-col h-full">
+    <div className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-xl shadow-sm overflow-hidden flex flex-col flex-1 min-h-0 text-slate-800 dark:text-slate-100 transition-colors duration-150">
       {/* Tab Navigation header */}
-      <div className="flex flex-wrap items-center justify-between border-b border-gray-200 bg-gray-50/50 px-4 pt-2">
+      <div className="flex flex-wrap items-center justify-between border-b border-gray-200 dark:border-slate-800 bg-gray-50/50 dark:bg-slate-950/20 px-4 pt-2">
         <div className="flex gap-1 overflow-x-auto">
           <button
             id="tab-paths"
             onClick={() => setActiveTab('paths')}
             className={`px-3.5 py-3 text-xs font-semibold border-b-2 transition-all ${
               activeTab === 'paths'
-                ? 'border-indigo-600 text-indigo-600'
-                : 'border-transparent text-gray-500 hover:text-gray-850'
+                ? 'border-indigo-600 dark:border-indigo-500 text-indigo-600 dark:text-indigo-400'
+                : 'border-transparent text-gray-500 dark:text-slate-400 hover:text-gray-850 dark:hover:text-slate-200'
             }`}
           >
             Path Coefficients
@@ -288,8 +288,8 @@ export default function ResultsDashboard({
             onClick={() => setActiveTab('loadings')}
             className={`px-3.5 py-3 text-xs font-semibold border-b-2 transition-all ${
               activeTab === 'loadings'
-                ? 'border-indigo-600 text-indigo-600'
-                : 'border-transparent text-gray-500 hover:text-gray-850'
+                ? 'border-indigo-600 dark:border-indigo-500 text-indigo-600 dark:text-indigo-400'
+                : 'border-transparent text-gray-500 dark:text-slate-400 hover:text-gray-850 dark:hover:text-slate-200'
             }`}
           >
             Factor Loadings / Weights
@@ -299,8 +299,8 @@ export default function ResultsDashboard({
             onClick={() => setActiveTab('effects')}
             className={`px-3.5 py-3 text-xs font-semibold border-b-2 transition-all ${
               activeTab === 'effects'
-                ? 'border-indigo-600 text-indigo-600'
-                : 'border-transparent text-gray-500 hover:text-gray-850'
+                ? 'border-indigo-600 dark:border-indigo-500 text-indigo-600 dark:text-indigo-400'
+                : 'border-transparent text-gray-500 dark:text-slate-400 hover:text-gray-850 dark:hover:text-slate-200'
             }`}
           >
             Total & Indirect Effects
@@ -310,8 +310,8 @@ export default function ResultsDashboard({
             onClick={() => setActiveTab('reliability')}
             className={`px-3.5 py-3 text-xs font-semibold border-b-2 transition-all ${
               activeTab === 'reliability'
-                ? 'border-indigo-600 text-indigo-600'
-                : 'border-transparent text-gray-500 hover:text-gray-850'
+                ? 'border-indigo-600 dark:border-indigo-500 text-indigo-600 dark:text-indigo-400'
+                : 'border-transparent text-gray-500 dark:text-slate-400 hover:text-gray-850 dark:hover:text-slate-200'
             }`}
           >
             Construct Validity
@@ -321,8 +321,8 @@ export default function ResultsDashboard({
             onClick={() => setActiveTab('discriminant')}
             className={`px-3.5 py-3 text-xs font-semibold border-b-2 transition-all ${
               activeTab === 'discriminant'
-                ? 'border-indigo-600 text-indigo-600'
-                : 'border-transparent text-gray-500 hover:text-gray-850'
+                ? 'border-indigo-600 dark:border-indigo-500 text-indigo-600 dark:text-indigo-400'
+                : 'border-transparent text-gray-500 dark:text-slate-400 hover:text-gray-850 dark:hover:text-slate-200'
             }`}
           >
             Discriminant Validity
@@ -332,8 +332,8 @@ export default function ResultsDashboard({
             onClick={() => setActiveTab('vif')}
             className={`px-3.5 py-3 text-xs font-semibold border-b-2 transition-all ${
               activeTab === 'vif'
-                ? 'border-indigo-600 text-indigo-600'
-                : 'border-transparent text-gray-500 hover:text-gray-850'
+                ? 'border-indigo-600 dark:border-indigo-500 text-indigo-600 dark:text-indigo-400'
+                : 'border-transparent text-gray-500 dark:text-slate-400 hover:text-gray-850 dark:hover:text-slate-200'
             }`}
           >
             Collinearity (VIF)
@@ -343,8 +343,8 @@ export default function ResultsDashboard({
             onClick={() => setActiveTab('fit')}
             className={`px-3.5 py-3 text-xs font-semibold border-b-2 transition-all ${
               activeTab === 'fit'
-                ? 'border-indigo-600 text-indigo-600'
-                : 'border-transparent text-gray-500 hover:text-gray-850'
+                ? 'border-indigo-600 dark:border-indigo-500 text-indigo-600 dark:text-indigo-400'
+                : 'border-transparent text-gray-500 dark:text-slate-400 hover:text-gray-850 dark:hover:text-slate-200'
             }`}
           >
             Model Fit
@@ -354,8 +354,8 @@ export default function ResultsDashboard({
             onClick={() => setActiveTab('normality')}
             className={`px-3.5 py-3 text-xs font-semibold border-b-2 transition-all ${
               activeTab === 'normality'
-                ? 'border-indigo-600 text-indigo-600'
-                : 'border-transparent text-gray-500 hover:text-gray-850'
+                ? 'border-indigo-600 dark:border-indigo-500 text-indigo-600 dark:text-indigo-400'
+                : 'border-transparent text-gray-500 dark:text-slate-400 hover:text-gray-850 dark:hover:text-slate-200'
             }`}
           >
             Normality Testing
@@ -363,7 +363,7 @@ export default function ResultsDashboard({
         </div>
 
         <div className="py-2 shrink-0 flex items-center gap-2">
-          <span className="text-[10px] bg-gray-150 text-gray-700 px-2.5 py-1 rounded font-bold font-mono border border-gray-200">
+          <span className="text-[10px] bg-gray-150 dark:bg-slate-800 text-gray-700 dark:text-slate-300 px-2.5 py-1 rounded font-bold font-mono border border-gray-200 dark:border-slate-700">
             Converged in {results.iterationsRun} iterations
           </span>
           <button
@@ -377,47 +377,47 @@ export default function ResultsDashboard({
       </div>
 
       {/* Parameter Settings Banner */}
-      <div id="results-parameter-banner" className="bg-slate-50 border-b border-gray-200 px-5 py-2 flex flex-wrap items-center justify-between gap-2 text-[11px] text-slate-500">
+      <div id="results-parameter-banner" className="bg-slate-50 dark:bg-slate-950/20 border-b border-gray-200 dark:border-slate-800 px-5 py-2 flex flex-wrap items-center justify-between gap-2 text-[11px] text-slate-500 dark:text-slate-400">
         <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
           <span className="flex items-center gap-1">
-            <span className="font-bold text-slate-600">Scheme:</span> 
-            <span className="capitalize font-mono text-slate-800">{results.algorithmOptions?.weightingScheme ?? 'path'}</span>
+            <span className="font-bold text-slate-600 dark:text-slate-300">Scheme:</span> 
+            <span className="capitalize font-mono text-slate-800 dark:text-slate-200">{results.algorithmOptions?.weightingScheme ?? 'path'}</span>
           </span>
-          <span className="w-px h-3 bg-slate-200"></span>
+          <span className="w-px h-3 bg-slate-200 dark:bg-slate-800"></span>
           <span className="flex items-center gap-1">
-            <span className="font-bold text-slate-600">Max Iterations:</span> 
-            <span className="font-mono text-slate-800">{results.algorithmOptions?.maxIterations ?? 300}</span>
+            <span className="font-bold text-slate-600 dark:text-slate-300">Max Iterations:</span> 
+            <span className="font-mono text-slate-800 dark:text-slate-200">{results.algorithmOptions?.maxIterations ?? 300}</span>
           </span>
-          <span className="w-px h-3 bg-slate-200"></span>
+          <span className="w-px h-3 bg-slate-200 dark:bg-slate-800"></span>
           <span className="flex items-center gap-1">
-            <span className="font-bold text-slate-600">Stop Criterion:</span> 
-            <span className="font-mono text-slate-800">{(results.algorithmOptions?.tolerance ?? 1e-7).toExponential(1)}</span>
+            <span className="font-bold text-slate-600 dark:text-slate-300">Stop Criterion:</span> 
+            <span className="font-mono text-slate-800 dark:text-slate-200">{(results.algorithmOptions?.tolerance ?? 1e-7).toExponential(1)}</span>
           </span>
           {results.bootstrappingRun && (
             <>
-              <span className="w-px h-3 bg-slate-200"></span>
-              <span className="flex items-center gap-1 text-indigo-700 font-semibold bg-indigo-50/70 px-1.5 py-0.5 rounded border border-indigo-100">
+              <span className="w-px h-3 bg-slate-200 dark:bg-slate-800"></span>
+              <span className="flex items-center gap-1 text-indigo-700 dark:text-indigo-400 bg-indigo-50/70 dark:bg-indigo-950/20 px-1.5 py-0.5 rounded border border-indigo-100 dark:border-indigo-900/30">
                 <Shuffle className="w-3 h-3 text-indigo-500 shrink-0" />
                 <span>Bootstrap Subsamp: {results.bootstrapSamplesCount ?? results.bootstrappingOptions?.samplesCount ?? 500}</span>
               </span>
-              <span className="w-px h-3 bg-indigo-100"></span>
-              <span className="flex items-center gap-1 text-indigo-700 font-semibold bg-indigo-50/70 px-1.5 py-0.5 rounded border border-indigo-100">
+              <span className="w-px h-3 bg-indigo-100 dark:bg-slate-800"></span>
+              <span className="flex items-center gap-1 text-indigo-700 dark:text-indigo-400 bg-indigo-50/70 dark:bg-indigo-950/20 px-1.5 py-0.5 rounded border border-indigo-100 dark:border-indigo-900/30">
                 <span>Sig. Level: {results.bootstrappingOptions?.significanceLevel ?? 0.05}</span>
               </span>
-              <span className="w-px h-3 bg-indigo-100"></span>
-              <span className="flex items-center gap-1 text-indigo-700 font-semibold bg-indigo-50/70 px-1.5 py-0.5 rounded border border-indigo-100 font-mono">
+              <span className="w-px h-3 bg-indigo-100 dark:bg-slate-800"></span>
+              <span className="flex items-center gap-1 text-indigo-700 dark:text-indigo-400 bg-indigo-50/70 dark:bg-indigo-950/20 px-1.5 py-0.5 rounded border border-indigo-100 dark:border-indigo-900/30 font-mono">
                 <span className="capitalize">{results.bootstrappingOptions?.testType ?? 'two-tailed'}</span>
               </span>
             </>
           )}
         </div>
-        <div className="text-[10px] text-slate-400 font-medium">
+        <div className="text-[10px] text-slate-400 dark:text-slate-500 font-medium">
           Calculated based on custom parameters
         </div>
       </div>
 
       {/* Main Results panels scroll box */}
-      <div className="flex-1 overflow-auto p-5">
+      <div className="flex-1 overflow-auto p-5 bg-white dark:bg-slate-900">
         
         {/* TABS 1: PATH COEFFICIENTS */}
         {activeTab === 'paths' && (

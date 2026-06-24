@@ -9,6 +9,7 @@ export interface Construct {
   y: number;
   indicators: string[];
   indicatorAlignment: IndicatorAlignment;
+  indicatorOffsets?: Record<string, { x: number; y: number }>;
 }
 
 export interface StructuralPath {
