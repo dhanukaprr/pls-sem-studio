@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Construct, StructuralPath, PLSResults, ConstructType, IndicatorAlignment } from '../types';
-import { Play, RotateCcw, Trash2, Link2, Plus, Move, Edit, Check, Settings, X, Download, ChevronDown } from 'lucide-react';
+import { Play, RotateCcw, Trash2, Link2, Plus, Move, Edit, Check, Settings, X, Download, ChevronDown, ZoomIn, ZoomOut } from 'lucide-react';
 
 interface ModelCanvasProps {
   constructs: Construct[];
@@ -38,6 +38,13 @@ export default function ModelCanvas({
   const [isEditingNode, setIsEditingNode] = useState(false);
   const [isExportDropdownOpen, setIsExportDropdownOpen] = useState(false);
 
+  // Pan and Zoom States
+  const [panOffset, setPanOffset] = useState({ x: 0, y: 0 });
+  const [zoom, setZoom] = useState(1);
+  const [isPanning, setIsPanning] = useState(false);
+  const [panStart, setPanStart] = useState({ x: 0, y: 0 });
+  const panHasMoved = useRef(false);
+
   // Form states for creating/editing constructs
   const [nodeName, setNodeName] = useState('');
   const [nodeType, setNodeType] = useState<ConstructType>('reflective');
@@ -53,9 +60,14 @@ export default function ModelCanvas({
     // Only handle if clicking directly on the background canvas to prevent bubbled clicks from nodes/paths
     if (e.target !== e.currentTarget) return;
 
+    if (panHasMoved.current) {
+      panHasMoved.current = false;
+      return;
+    }
+
     const rect = svgRef.current.getBoundingClientRect();
-    const x = Math.round(e.clientX - rect.left);
-    const y = Math.round(e.clientY - rect.top);
+    const x = Math.round((e.clientX - rect.left - panOffset.x) / zoom);
+    const y = Math.round((e.clientY - rect.top - panOffset.y) / zoom);
 
     if (activeTool === 'add') {
       const newId = 'construct_' + Date.now();
@@ -83,6 +95,57 @@ export default function ModelCanvas({
     }
   };
 
+  // Handle panning on background mouse down
+  const handleMouseDown = (e: React.MouseEvent<SVGSVGElement>) => {
+    if (!svgRef.current) return;
+    
+    // Only handle if clicking directly on the background canvas to prevent bubbled clicks from nodes/paths
+    if (e.target !== e.currentTarget) return;
+
+    setIsPanning(true);
+    panHasMoved.current = false;
+    setPanStart({
+      x: e.clientX - panOffset.x,
+      y: e.clientY - panOffset.y
+    });
+  };
+
+  const handleWheel = (e: React.WheelEvent<SVGSVGElement>) => {
+    e.preventDefault();
+    const zoomFactor = 1.1;
+    let nextZoom = zoom;
+    if (e.deltaY < 0) {
+      nextZoom = Math.min(3, zoom * zoomFactor);
+    } else {
+      nextZoom = Math.max(0.2, zoom / zoomFactor);
+    }
+
+    const rect = svgRef.current?.getBoundingClientRect();
+    if (rect) {
+      const mouseX = e.clientX - rect.left;
+      const mouseY = e.clientY - rect.top;
+
+      setPanOffset(prev => ({
+        x: mouseX - (mouseX - prev.x) * (nextZoom / zoom),
+        y: mouseY - (mouseY - prev.y) * (nextZoom / zoom)
+      }));
+    }
+    setZoom(nextZoom);
+  };
+
+  const handleZoomIn = () => {
+    setZoom(prev => Math.min(3, prev * 1.2));
+  };
+
+  const handleZoomOut = () => {
+    setZoom(prev => Math.max(0.2, prev / 1.2));
+  };
+
+  const handleResetZoom = () => {
+    setZoom(1);
+    setPanOffset({ x: 0, y: 0 });
+  };
+
   // Node drag handlers
   const handleNodeMouseDown = (e: React.MouseEvent, node: Construct) => {
     e.stopPropagation();
@@ -95,9 +158,13 @@ export default function ModelCanvas({
       
       const rect = svgRef.current?.getBoundingClientRect();
       if (rect) {
+        const rawX = e.clientX - rect.left;
+        const rawY = e.clientY - rect.top;
+        const canvasX = (rawX - panOffset.x) / zoom;
+        const canvasY = (rawY - panOffset.y) / zoom;
         setDragOffset({
-          x: e.clientX - rect.left - node.x,
-          y: e.clientY - rect.top - node.y
+          x: canvasX - node.x,
+          y: canvasY - node.y
         });
       }
     } else if (activeTool === 'connect') {
@@ -129,9 +196,12 @@ export default function ModelCanvas({
   const handleMouseMove = (e: React.MouseEvent) => {
     if (!svgRef.current) return;
     const rect = svgRef.current.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-    setMousePos({ x, y });
+    const rawX = e.clientX - rect.left;
+    const rawY = e.clientY - rect.top;
+
+    const canvasX = (rawX - panOffset.x) / zoom;
+    const canvasY = (rawY - panOffset.y) / zoom;
+    setMousePos({ x: canvasX, y: canvasY });
 
     if (draggedNodeId) {
       onUpdateConstructs(
@@ -139,18 +209,29 @@ export default function ModelCanvas({
           if (c.id === draggedNodeId) {
             return {
               ...c,
-              x: Math.max(nodeRadius + 20, Math.min(rect.width - nodeRadius - 20, Math.round(x - dragOffset.x))),
-              y: Math.max(nodeRadius + 20, Math.min(rect.height - nodeRadius - 20, Math.round(y - dragOffset.y)))
+              x: Math.round(canvasX - dragOffset.x),
+              y: Math.round(canvasY - dragOffset.y)
             };
           }
           return c;
         })
       );
+    } else if (isPanning) {
+      const dx = Math.abs(e.clientX - (panStart.x + panOffset.x));
+      const dy = Math.abs(e.clientY - (panStart.y + panOffset.y));
+      if (dx > 3 || dy > 3) {
+        panHasMoved.current = true;
+      }
+      setPanOffset({
+        x: e.clientX - panStart.x,
+        y: e.clientY - panStart.y
+      });
     }
   };
 
   const handleMouseUp = () => {
     setDraggedNodeId(null);
+    setIsPanning(false);
   };
 
   // HTML5 Drop handler to assign indicators to constructs
@@ -203,8 +284,8 @@ export default function ModelCanvas({
     if (columnNames.length === 0) return;
 
     const rect = svgRef.current.getBoundingClientRect();
-    const x = Math.round(e.clientX - rect.left);
-    const y = Math.round(e.clientY - rect.top);
+    const x = Math.round((e.clientX - rect.left - panOffset.x) / zoom);
+    const y = Math.round((e.clientY - rect.top - panOffset.y) / zoom);
 
     const newId = 'construct_' + Date.now();
     const numConstructs = constructs.length + 1;
@@ -563,7 +644,7 @@ export default function ModelCanvas({
       )}
 
       {/* Interactive SVG Workspace */}
-      <div className="flex-1 relative overflow-auto select-none">
+      <div className="flex-1 relative overflow-hidden select-none">
         {constructs.length === 0 && (
           <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center pointer-events-none">
             <Plus className="w-10 h-10 text-gray-300 mb-2" />
@@ -577,11 +658,13 @@ export default function ModelCanvas({
         <svg
           id="pls-sem-model-svg"
           ref={svgRef}
-          className="w-full h-full min-h-[500px] min-w-[800px] bg-white cursor-crosshair"
+          className={`w-full h-full min-h-[500px] min-w-[800px] bg-white transition-colors duration-150 ${isPanning ? 'cursor-grabbing' : activeTool === 'select' ? 'cursor-grab' : 'cursor-crosshair'}`}
           onClick={handleCanvasClick}
+          onMouseDown={handleMouseDown}
           onMouseMove={handleMouseMove}
           onMouseUp={handleMouseUp}
           onMouseLeave={handleMouseUp}
+          onWheel={handleWheel}
           onDragOver={handleDragOver}
           onDrop={handleCanvasDrop}
         >
@@ -605,10 +688,19 @@ export default function ModelCanvas({
           </defs>
 
           {/* BACKGROUND GRID */}
-          <pattern id="grid" width="20" height="20" patternUnits="userSpaceOnUse">
+          <pattern 
+            id="grid" 
+            width="20" 
+            height="20" 
+            patternUnits="userSpaceOnUse"
+            patternTransform={`translate(${panOffset.x}, ${panOffset.y}) scale(${zoom})`}
+          >
             <circle cx="2" cy="2" r="1.2" fill="#e5e7eb" />
           </pattern>
           <rect width="100%" height="100%" fill="url(#grid)" className="pointer-events-none" />
+
+          {/* TRANSFORMATION GROUP FOR PAN & ZOOM */}
+          <g transform={`translate(${panOffset.x}, ${panOffset.y}) scale(${zoom})`}>
 
           {/* DYNAMIC PATH DRAWING (Rubber band) */}
           {activeTool === 'connect' && pathStartId && (
@@ -1017,7 +1109,36 @@ export default function ModelCanvas({
               </g>
             );
           })}
+          </g>
         </svg>
+
+        {/* Floating Zoom and Pan Controls */}
+        <div className="absolute bottom-4 right-4 z-10 flex flex-col gap-1.5 bg-white border border-gray-200 p-1.5 rounded-lg shadow-md select-none">
+          <button
+            type="button"
+            onClick={handleZoomIn}
+            className="p-1.5 hover:bg-gray-100 rounded text-gray-600 transition cursor-pointer"
+            title="Zoom In"
+          >
+            <ZoomIn className="w-4.5 h-4.5" />
+          </button>
+          <button
+            type="button"
+            onClick={handleZoomOut}
+            className="p-1.5 hover:bg-gray-100 rounded text-gray-600 transition cursor-pointer"
+            title="Zoom Out"
+          >
+            <ZoomOut className="w-4.5 h-4.5" />
+          </button>
+          <button
+            type="button"
+            onClick={handleResetZoom}
+            className="px-1 py-0.5 hover:bg-gray-100 rounded text-gray-500 hover:text-gray-750 text-[10px] font-extrabold tracking-tight transition cursor-pointer border border-gray-200"
+            title="Reset Zoom & Pan"
+          >
+            {Math.round(zoom * 100)}%
+          </button>
+        </div>
       </div>
 
       {/* QUICK INLINE SETTINGS DRAWER OVERLAY */}
