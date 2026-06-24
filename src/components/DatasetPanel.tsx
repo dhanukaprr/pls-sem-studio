@@ -212,22 +212,21 @@ export default function DatasetPanel({
         <div className="bg-gray-50/50 rounded-xl border border-gray-200 p-2.5 mb-3.5 space-y-2 text-xs">
           <div className="flex items-center justify-between">
             <span className="font-bold text-gray-700">Multi-Select Actions</span>
-            <div className="flex gap-2">
+            <div className="flex gap-1.5">
               <button
                 type="button"
                 onClick={handleSelectAllIndicators}
-                className="text-[10px] text-indigo-600 hover:text-indigo-800 font-bold transition cursor-pointer"
+                className="px-2 py-1 bg-white hover:bg-gray-50 border border-gray-200 hover:border-gray-300 rounded text-[10px] text-indigo-600 font-bold transition cursor-pointer shadow-sm"
               >
                 Select All
               </button>
-              <span className="text-gray-300">|</span>
               <button
                 type="button"
                 onClick={handleDeselectAllIndicators}
                 disabled={selectedIndicators.length === 0}
-                className="text-[10px] text-gray-500 hover:text-gray-700 font-bold transition disabled:opacity-40 cursor-pointer"
+                className="px-2 py-1 bg-white hover:bg-gray-50 border border-gray-200 hover:border-gray-300 rounded text-[10px] text-gray-600 hover:text-gray-800 font-bold transition disabled:opacity-40 disabled:pointer-events-none cursor-pointer shadow-sm"
               >
-                Clear
+                Deselect All
               </button>
             </div>
           </div>
@@ -278,11 +277,16 @@ export default function DatasetPanel({
               e.dataTransfer.effectAllowed = 'copy';
             };
 
+            const handleDragEnd = () => {
+              setSelectedIndicators([]);
+            };
+
             return (
               <div
                 key={col}
                 draggable={true}
                 onDragStart={handleDragStart}
+                onDragEnd={handleDragEnd}
                 className={`border rounded-lg p-2 bg-white transition group cursor-grab active:cursor-grabbing hover:shadow-sm ${
                   isSelected
                     ? 'border-indigo-300 bg-indigo-50/10'
