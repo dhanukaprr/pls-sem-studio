@@ -1,6 +1,7 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { Dataset, Construct } from '../types';
 import { parseCSV } from '../utils/csvParser';
+import { parseExcel } from '../utils/excelParser';
 import { builtInDatasets } from '../utils/demoData';
 import { Upload, Database, Eye, BarChart, ChevronDown, ChevronUp, Check, AlertCircle } from 'lucide-react';
 import { getMean, getStdDev } from '../utils/math';
@@ -46,11 +47,20 @@ export default function DatasetPanel({
   const processFile = async (file: File) => {
     try {
       setErrorMsg(null);
-      const text = await file.text();
-      const dataset = parseCSV(text, file.name);
+      const name = file.name.toLowerCase();
+      let dataset: Dataset;
+
+      if (name.endsWith('.xlsx') || name.endsWith('.xls')) {
+        const buffer = await file.arrayBuffer();
+        dataset = parseExcel(buffer, file.name);
+      } else {
+        const text = await file.text();
+        dataset = parseCSV(text, file.name);
+      }
+
       onDatasetChange(dataset);
     } catch (err: any) {
-      setErrorMsg(err.message || 'Failed to parse CSV file.');
+      setErrorMsg(err.message || 'Failed to parse file.');
     }
   };
 
@@ -201,7 +211,7 @@ export default function DatasetPanel({
         </div>
       </div>
 
-      {/* CSV File Drag & Drop Upload Zone */}
+      {/* CSV or Excel File Drag & Drop Upload Zone */}
       <div className="p-4 border-b border-gray-200">
         <div
           id="csv-drag-upload-zone"
@@ -217,12 +227,12 @@ export default function DatasetPanel({
           }`}
         >
           <Upload className="w-6 h-6 text-gray-400 mb-1.5" />
-          <span className="text-xs font-bold text-gray-700">Upload custom CSV dataset</span>
-          <span className="text-[10px] text-gray-400 mt-0.5">Drag CSV file or click here</span>
+          <span className="text-xs font-bold text-gray-700">Upload custom CSV or Excel dataset</span>
+          <span className="text-[10px] text-gray-400 mt-0.5">Drag CSV/Excel file or click here</span>
           <input
             ref={fileInputRef}
             type="file"
-            accept=".csv"
+            accept=".csv,.xlsx,.xls"
             onChange={handleFileChange}
             className="hidden"
           />

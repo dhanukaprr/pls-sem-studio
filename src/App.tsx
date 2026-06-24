@@ -357,7 +357,7 @@ export default function App() {
             
             {/* CANVAS WRAPPER */}
             {(viewMode === 'split' || viewMode === 'canvas-only') && (
-              <div className={`transition-all duration-300 min-h-[300px] ${
+              <div className={`transition-all duration-300 min-h-[300px] flex flex-col min-h-0 ${
                 viewMode === 'canvas-only' ? 'flex-1' : 'h-[50%]'
               }`}>
                 <ModelCanvas
@@ -378,7 +378,7 @@ export default function App() {
 
             {/* RESULTS SHEET WRAPPER */}
             {(viewMode === 'split' || viewMode === 'results-only') && (
-              <div className={`transition-all duration-300 ${
+              <div className={`transition-all duration-300 flex flex-col min-h-0 ${
                 viewMode === 'results-only' ? 'flex-1' : 'flex-1 min-h-[250px]'
               }`}>
                 {results ? (
