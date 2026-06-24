@@ -9,16 +9,19 @@ interface DatasetPanelProps {
   selectedDataset: Dataset;
   onDatasetChange: (dataset: Dataset, defaultModelKey?: 'corpRep' | 'tam') => void;
   constructs: Construct[];
+  onUpdateConstructs?: (constructs: Construct[]) => void;
 }
 
 export default function DatasetPanel({
   selectedDataset,
   onDatasetChange,
-  constructs
+  constructs,
+  onUpdateConstructs
 }: DatasetPanelProps) {
   const [dragOverActive, setDragOverActive] = useState(false);
   const [expandedVar, setExpandedVar] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [selectedIndicators, setSelectedIndicators] = useState<string[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const assignedVariables = new Set(constructs.flatMap(c => c.indicators));
@@ -75,6 +78,47 @@ export default function DatasetPanel({
     const min = Math.min(...vals);
     const max = Math.max(...vals);
     return { mean, std, min, max };
+  };
+
+  const handleToggleSelectIndicator = (col: string) => {
+    setSelectedIndicators(prev =>
+      prev.includes(col) ? prev.filter(c => c !== col) : [...prev, col]
+    );
+  };
+
+  const handleSelectAllIndicators = () => {
+    setSelectedIndicators([...selectedDataset.columns]);
+  };
+
+  const handleDeselectAllIndicators = () => {
+    setSelectedIndicators([]);
+  };
+
+  const handleAssignSelectedToConstruct = (constructId: string) => {
+    if (!onUpdateConstructs || selectedIndicators.length === 0) return;
+
+    onUpdateConstructs(
+      constructs.map(c => {
+        if (c.id === constructId) {
+          const nextIndicators = [...c.indicators];
+          selectedIndicators.forEach(col => {
+            if (!nextIndicators.includes(col)) {
+              nextIndicators.push(col);
+            }
+          });
+          return {
+            ...c,
+            indicators: nextIndicators
+          };
+        } else {
+          return {
+            ...c,
+            indicators: c.indicators.filter(ind => !selectedIndicators.includes(ind))
+          };
+        }
+      })
+    );
+    setSelectedIndicators([]);
   };
 
   return (
@@ -164,14 +208,73 @@ export default function DatasetPanel({
           <span>{assignedVariables.size} / {selectedDataset.columns.length} assigned</span>
         </div>
 
+        {/* Bulk Action Controls */}
+        <div className="bg-gray-50/50 rounded-xl border border-gray-200 p-2.5 mb-3.5 space-y-2 text-xs">
+          <div className="flex items-center justify-between">
+            <span className="font-bold text-gray-700">Multi-Select Actions</span>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={handleSelectAllIndicators}
+                className="text-[10px] text-indigo-600 hover:text-indigo-800 font-bold transition cursor-pointer"
+              >
+                Select All
+              </button>
+              <span className="text-gray-300">|</span>
+              <button
+                type="button"
+                onClick={handleDeselectAllIndicators}
+                disabled={selectedIndicators.length === 0}
+                className="text-[10px] text-gray-500 hover:text-gray-700 font-bold transition disabled:opacity-40 cursor-pointer"
+              >
+                Clear
+              </button>
+            </div>
+          </div>
+
+          {selectedIndicators.length > 0 ? (
+            <div className="bg-indigo-50/50 border border-indigo-100 rounded-lg p-2 space-y-1.5">
+              <div className="font-semibold text-indigo-900 text-[11px]">
+                {selectedIndicators.length} columns selected
+              </div>
+              <div className="text-[10px] text-gray-500 italic mb-1 leading-relaxed">
+                Drag any selected item to a construct OR click a target below to assign them all:
+              </div>
+              {constructs.length > 0 ? (
+                <div className="grid grid-cols-1 gap-1 max-h-32 overflow-y-auto">
+                  {constructs.map(c => (
+                    <button
+                      key={c.id}
+                      onClick={() => handleAssignSelectedToConstruct(c.id)}
+                      className="w-full text-left bg-white hover:bg-indigo-600 hover:text-white border border-gray-200 hover:border-indigo-600 rounded px-2 py-1 text-[10px] font-bold text-gray-700 transition truncate cursor-pointer"
+                    >
+                      Assign to: {c.name}
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-[10px] text-gray-400 font-medium italic">
+                  Create a latent variable on the canvas first to assign items.
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="text-[10px] text-gray-400 font-medium italic leading-relaxed">
+              Check indicators below to group-drag them or assign them in bulk with one click.
+            </div>
+          )}
+        </div>
+
         <div className="space-y-1.5">
           {selectedDataset.columns.map((col) => {
             const isAssigned = assignedVariables.has(col);
             const isExpanded = expandedVar === col;
+            const isSelected = selectedIndicators.includes(col);
 
             // HTML5 DragStart handler
             const handleDragStart = (e: React.DragEvent) => {
-              e.dataTransfer.setData('text/plain', col);
+              const listToDrag = isSelected ? selectedIndicators : [col];
+              e.dataTransfer.setData('text/plain', listToDrag.join(','));
               e.dataTransfer.effectAllowed = 'copy';
             };
 
@@ -181,15 +284,23 @@ export default function DatasetPanel({
                 draggable={true}
                 onDragStart={handleDragStart}
                 className={`border rounded-lg p-2 bg-white transition group cursor-grab active:cursor-grabbing hover:shadow-sm ${
-                  isAssigned
-                    ? 'border-emerald-200 bg-emerald-50/20 hover:border-emerald-300'
+                  isSelected
+                    ? 'border-indigo-300 bg-indigo-50/10'
+                    : isAssigned
+                    ? 'border-emerald-200 bg-emerald-50/10 hover:border-emerald-300'
                     : 'border-gray-200 hover:border-gray-300'
                 }`}
               >
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-1.5 min-w-0">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <input
+                      type="checkbox"
+                      checked={isSelected}
+                      onChange={() => handleToggleSelectIndicator(col)}
+                      className="w-3.5 h-3.5 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+                    />
                     <BarChart className="w-3.5 h-3.5 text-gray-400 group-hover:text-indigo-500 transition" />
-                    <span className="text-xs font-bold text-gray-700 truncate" title="Drag me to a construct on the canvas!">
+                    <span className="text-xs font-bold text-gray-700 truncate" title="Drag me or select me!">
                       {col}
                     </span>
                   </div>

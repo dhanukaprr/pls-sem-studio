@@ -161,28 +161,33 @@ export default function ModelCanvas({
 
   const handleDropOnConstruct = (e: React.DragEvent, constructId: string) => {
     e.preventDefault();
-    const columnName = e.dataTransfer.getData('text/plain');
-    if (!columnName) return;
+    const dragData = e.dataTransfer.getData('text/plain');
+    if (!dragData) return;
+
+    const columnNames = dragData.split(',').map(s => s.trim()).filter(Boolean);
+    if (columnNames.length === 0) return;
 
     onUpdateConstructs(
       constructs.map(c => {
         if (c.id === constructId) {
-          // Add if not already assigned to this construct
-          if (!c.indicators.includes(columnName)) {
-            // Remove indicator from other constructs to maintain mutual exclusivity
-            return {
-              ...c,
-              indicators: [...c.indicators, columnName]
-            };
-          }
-        } else {
-          // Remove from other constructs
+          // Add all indicators that are not already in this construct
+          const nextIndicators = [...c.indicators];
+          columnNames.forEach(col => {
+            if (!nextIndicators.includes(col)) {
+              nextIndicators.push(col);
+            }
+          });
           return {
             ...c,
-            indicators: c.indicators.filter(ind => ind !== columnName)
+            indicators: nextIndicators
+          };
+        } else {
+          // Remove all dropped indicators from other constructs to maintain mutual exclusivity
+          return {
+            ...c,
+            indicators: c.indicators.filter(ind => !columnNames.includes(ind))
           };
         }
-        return c;
       })
     );
   };

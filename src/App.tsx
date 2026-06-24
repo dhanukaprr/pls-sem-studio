@@ -11,17 +11,19 @@ import { Sigma, Info, BookOpen, AlertCircle, Sparkles, ChevronDown, RefreshCw, L
 export default function App() {
   // 1. Core State
   const [selectedDataset, setSelectedDataset] = useState<Dataset>(builtInDatasets.corpRep);
-  const [constructs, setConstructs] = useState<Construct[]>(defaultCorpRepModel.constructs);
-  const [paths, setPaths] = useState<StructuralPath[]>(defaultCorpRepModel.paths);
+  const [constructs, setConstructs] = useState<Construct[]>([]);
+  const [paths, setPaths] = useState<StructuralPath[]>([]);
   const [selectedConstructId, setSelectedConstructId] = useState<string | null>(null);
   const [results, setResults] = useState<PLSResults | null>(null);
   const [bootstrappingProgress, setBootstrappingProgress] = useState<number | null>(null);
   const [viewMode, setViewMode] = useState<'split' | 'canvas-only' | 'results-only'>('split');
   const [validationError, setValidationError] = useState<string | null>(null);
 
-  // Auto-run the PLS-SEM algorithm on load so the user sees results immediately
+  // Auto-run the PLS-SEM algorithm on load if there are constructs
   useEffect(() => {
-    handleRunPlsSem();
+    if (constructs.length > 0) {
+      handleRunPlsSem();
+    }
   }, []);
 
   // 2. Event Handlers
@@ -260,6 +262,7 @@ export default function App() {
             selectedDataset={selectedDataset}
             onDatasetChange={handleDatasetChange}
             constructs={constructs}
+            onUpdateConstructs={setConstructs}
           />
         </section>
 
