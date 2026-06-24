@@ -1,0 +1,6 @@
+{
+  "name": "PLS-SEM Analyzer",
+  "description": "A fully interactive Partial Least Squares Structural Equation Modeling (PLS-SEM) analyzer featuring a drag-and-drop path model builder, dataset inspector, robust iterative PLS algorithm engine, and bootstrap resampling for significance testing.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
