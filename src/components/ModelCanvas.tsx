@@ -426,7 +426,7 @@ export default function ModelCanvas({
   };
 
   const handleExportSvg = () => {
-    const svgEl = document.getElementById('pls-model-svg');
+    const svgEl = document.getElementById('pls-sem-model-svg');
     if (!svgEl) return;
 
     // Clone the SVG element so we can safely strip dynamic/interactive classes
@@ -487,7 +487,7 @@ export default function ModelCanvas({
   };
 
   const handleExportPng = () => {
-    const svgEl = document.getElementById('pls-model-svg');
+    const svgEl = document.getElementById('pls-sem-model-svg');
     if (!svgEl) return;
 
     const bbox = svgRef.current?.getBoundingClientRect();
